@@ -1,0 +1,2578 @@
+<meta charset="utf-8">
+<title>Model & Malzeme Editörü — Configurator Studio</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<style>
+  /* ============ Tasarım Dili: "Glass / Nav Kit" (referans: Behance — 3D web3 AR/VR mall
+     navigation UI kit) — koyu cam paneller, canlı çok-renkli rozet paleti, pill butonlar,
+     ışıltılı aktif durumlar. data-theme="dark" (varsayılan) / "light" ile anlık geçiş yapılır
+     (topbar'daki güneş/ay düğmesi — bkz. #themeToggle). ============ */
+  :root{
+    --bg-grad: radial-gradient(120% 100% at 26% -8%, #223056 0%, #0b0f18 58%);
+    --panel: rgba(19,27,40,.66); --panel2: rgba(255,255,255,.055); --panel-solid:#161d2b;
+    --ink:#F2F5F9; --dim:rgba(242,245,249,.56);
+    --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.17);
+    --accent:#7C5CFC; --accent2:#9C7CFF;
+    --pink:#F0568F; --blue:#3B8BF5; --orange:#F5A623; --green:#33E08A; --purple:#8B5CF6;
+    --err:#FF5C7A; --ok:#33E08A;
+    --blur: blur(22px) saturate(170%);
+    --r-lg:22px; --r-md:14px; --r-sm:9px; --r-pill:999px;
+    --shadow-float: 0 18px 44px -18px rgba(0,0,0,.55);
+    --font-ui:-apple-system,"Segoe UI",system-ui,sans-serif;
+    --font-mono:"SF Mono","Consolas","Courier New",monospace;
+  }
+  :root[data-theme="light"]{
+    --bg-grad: radial-gradient(120% 100% at 26% -8%, #EAF3F5 0%, #E6E8F7 55%, #EEF0FB 100%);
+    --panel: rgba(255,255,255,.70); --panel2: rgba(20,30,50,.045); --panel-solid:#ffffff;
+    --ink:#141A24; --dim:rgba(20,26,36,.58);
+    --line:rgba(20,30,50,.09); --line2:rgba(20,30,50,.15);
+    --accent:#6A45E8; --accent2:#8563F2;
+    --pink:#E14E86; --blue:#2F76E0; --orange:#DE8A0C; --green:#149E63; --purple:#7C4CE0;
+    --err:#E14367; --ok:#149E63;
+    --shadow-float: 0 18px 40px -18px rgba(30,40,70,.22);
+  }
+  /* Üçüncü tema — referans: Behance "N2W" (backup/recovery SaaS) case study: sıcak kağıt
+     tonlu krem zemin, kalın siyah çerçeveli düz-editoryal kartlar (cam/blur YOK), iri kalın
+     başlık tipografisi, hardal sarısı/şeftali/mavi vurgular, siyah pill butonlar. */
+  :root[data-theme="warm"]{
+    --bg-grad: #F4EFE2;
+    --panel:#FFFFFF; --panel2:#ECE6D5; --panel-solid:#FFFFFF;
+    --ink:#17140F; --dim:#726C5C;
+    --line:#DED5BB; --line2:#17140F;
+    --accent:#2F6DF0; --accent2:#5089F5;
+    --pink:#F3AD8C; --blue:#2F6DF0; --orange:#F0C13E; --green:#3E9B6B; --purple:#8A6CD6;
+    --err:#E0523F; --ok:#3E9B6B;
+    --blur: none;
+    --shadow-float: 0 10px 24px -14px rgba(23,20,15,.18);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden}
+  body{font-family:var(--font-ui);color:var(--ink);background:var(--bg-grad);font-size:13.5px;-webkit-font-smoothing:antialiased;transition:background .3s}
+  button{font-family:inherit}
+  .tabular{font-variant-numeric:tabular-nums;font-family:var(--font-mono)}
+  .glass{background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line)}
+
+  .app{display:grid;grid-template-rows:60px 1fr;height:100vh}
+
+  .topbar{display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);z-index:20;box-shadow:var(--shadow-float)}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:13.5px;letter-spacing:.2px}
+  .brand .mark{width:26px;height:26px;flex:0 0 auto;display:block;filter:drop-shadow(0 3px 6px rgba(30,15,80,.28))}
+  .brand .mark svg{width:100%;height:100%;display:block}
+  .crumb{color:var(--dim);font-size:12px}
+  .crumb b{color:var(--ink);font-weight:600}
+  .nav{display:flex;gap:2px;margin-left:6px;background:var(--panel2);padding:3px;border-radius:var(--r-pill);border:1px solid var(--line)}
+  .nav a{font-size:11.5px;font-weight:700;color:var(--dim);text-decoration:none;padding:7px 13px;border-radius:var(--r-pill);transition:.15s}
+  .nav a:hover{color:var(--ink)}
+  .nav a.on{background:linear-gradient(135deg, var(--accent2), var(--accent));color:#fff;box-shadow:0 4px 14px -4px var(--accent)}
+  .spacer{flex:1}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:8px 15px;border-radius:var(--r-pill);border:1px solid var(--line2);background:var(--panel2);color:var(--ink);cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--accent);color:var(--ink)}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .btn.primary{background:linear-gradient(135deg, var(--accent2), var(--accent));border-color:transparent;color:#fff;box-shadow:0 6px 18px -6px var(--accent)}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+  .status-dot.ready{background:var(--green);box-shadow:0 0 8px 1px var(--green)}
+  .engine-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim)}
+  .theme-toggle{width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:var(--panel2);color:var(--dim);display:grid;place-items:center;cursor:pointer;transition:.15s;flex:0 0 auto}
+  .theme-toggle:hover{color:var(--ink);border-color:var(--accent)}
+  .theme-toggle svg{width:16px;height:16px}
+
+  .body{position:relative;min-height:0;overflow:hidden}
+
+  /* Sol/sağ paneller viewport üzerinde yüzen cam kartlar — varsayılan kapalı, kenardaki
+     ince tırnağa tıklayınca içeri kayar. Viewport her zaman tam genişlik/yükseklik kalır. */
+  /* Panel açma/kapama kulakçığı — viewport üzerinde her zaman fark edilir olması için
+     rengi hep vurgu rengi (dim değil), belirgin bir glow ve büyükçe bir tıklama alanı var. */
+  .edge-tab{
+    position:absolute;top:50%;width:28px;height:80px;transform:translateY(-50%);
+    background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    border:1.5px solid var(--accent);display:grid;place-items:center;
+    cursor:pointer;color:var(--accent);z-index:5;transition:color .15s,background .15s,box-shadow .15s;
+    box-shadow:0 6px 18px -6px color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  .edge-tab:hover{color:#fff;background:linear-gradient(135deg, var(--accent2), var(--accent))}
+  .edge-tab svg{width:15px;height:15px;transition:transform .25s cubic-bezier(.2,.9,.3,1)}
+
+  /* LEFT: scene list */
+  .scenepanel{
+    position:absolute;top:12px;bottom:12px;left:12px;width:250px;z-index:30;
+    background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    border:1px solid var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;min-height:0;
+    transform:translateX(calc(-100% - 12px));transition:transform .3s cubic-bezier(.2,.9,.3,1);
+    box-shadow:var(--shadow-float);
+  }
+  .scenepanel.open{transform:translateX(0)}
+  .scenepanel .edge-tab{right:-28px;border-left:none;border-radius:0 var(--r-md) var(--r-md) 0}
+  .scenepanel.open .edge-tab svg{transform:rotate(180deg)}
+  .sp-head{padding:16px 16px 10px}
+  .sp-head h2{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--dim);margin:0 0 4px;font-weight:800}
+  .sp-head p{margin:0;font-size:11px;color:var(--dim);line-height:1.5}
+  .import-drop{
+    margin:12px;border:1.5px dashed var(--line2);border-radius:var(--r-md);padding:18px 12px;text-align:center;cursor:pointer;transition:.15s;
+  }
+  .import-drop:hover,.import-drop.over{border-color:var(--accent);background:color-mix(in srgb, var(--accent) 10%, transparent)}
+  .import-drop svg{width:22px;height:22px;color:var(--dim);margin-bottom:6px}
+  .import-drop b{display:block;font-size:12px}
+  .import-drop span{display:block;font-size:10.5px;color:var(--dim);margin-top:3px}
+  .item-list{flex:1;overflow-y:auto;padding:0 10px 14px}
+  .scene-item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:var(--r-md);cursor:pointer;border:1px solid transparent;transition:.12s}
+  .scene-item:hover{background:var(--panel2)}
+  .scene-item.on{background:var(--panel2);border-color:var(--accent)}
+  .si-thumb{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:0 0 auto;color:#fff;box-shadow:0 4px 12px -4px rgba(0,0,0,.4)}
+  .si-thumb svg{width:16px;height:16px}
+  .si-info{min-width:0;flex:1}
+  .si-info .n{font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .si-info .m{font-size:10px;color:var(--dim)}
+  .si-del{width:22px;height:22px;border-radius:6px;border:none;background:none;color:var(--dim);display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+  .si-del:hover{background:color-mix(in srgb, var(--err) 18%, transparent);color:var(--err)}
+  .empty-hint{padding:20px 14px;color:var(--dim);font-size:11.5px;line-height:1.6;text-align:center}
+
+  /* Sahne hiyerarşisi satır aksiyonları — göz/kilit/çoğalt/sil, hover'da belirir */
+  .si-actions{display:flex;gap:1px;opacity:0;transition:opacity .12s;flex:0 0 auto}
+  .scene-item:hover .si-actions{opacity:1}
+  .si-icon{width:20px;height:20px;border-radius:5px;border:none;background:none;color:var(--dim);display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+  .si-icon:hover{background:var(--panel2);color:var(--ink)}
+  .si-icon.active{color:var(--accent)}
+  .scene-item.si-hidden{opacity:.5}
+  .si-tag{font-size:9px;font-weight:700;color:var(--accent);background:color-mix(in srgb, var(--accent) 14%, transparent);padding:1px 5px;border-radius:var(--r-pill);vertical-align:middle}
+  .si-rename-input{width:100%;font-size:12px;font-weight:700;padding:2px 4px;border-radius:5px;border:1px solid var(--accent);background:var(--panel);color:var(--ink)}
+
+  /* Mouse kenara yaklaşınca paneli aç — ince, görünmez bir "algılama şeridi".
+     Panelin kendisinin üstünde de aynı mantık çalışır (bkz. JS: setupHoverPanel). */
+  .hover-zone{position:absolute;top:0;bottom:0;width:26px;z-index:4}
+  .hover-zone.left{left:0}
+  .hover-zone.right{right:0}
+
+  /* CENTER: viewport */
+  .viewport-wrap{position:absolute;inset:0;overflow:hidden;z-index:1}
+  #stage-bg{position:absolute;inset:0;transition:background .3s}
+  #canvasHost{position:absolute;inset:0}
+  #canvasHost canvas{display:block;width:100%;height:100%}
+  .viewport-wrap.drag-over::after{content:"";position:absolute;inset:10px;border:2px dashed var(--accent);border-radius:var(--r-lg);background:color-mix(in srgb, var(--accent) 8%, transparent);pointer-events:none}
+
+  .vp-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+  .vp-empty-card{background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px 28px;text-align:center;box-shadow:var(--shadow-float)}
+  .vp-empty-card b{display:block;font-size:13px;margin-bottom:4px}
+  .vp-empty-card span{font-size:11.5px;color:var(--dim)}
+
+  .product-title{position:absolute;left:16px;top:14px;background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 14px;box-shadow:var(--shadow-float);max-width:60%}
+  .product-title .n{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .product-title .s{font-size:10.5px;color:var(--dim);margin-top:2px}
+
+  .vp-toolbar{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:2px;background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--r-pill);padding:4px;box-shadow:var(--shadow-float)}
+  .icon-btn{width:32px;height:32px;border-radius:50%;border:1px solid transparent;background:transparent;color:var(--dim);display:grid;place-items:center;cursor:pointer;transition:.12s}
+  .icon-btn:hover{background:var(--panel2);color:var(--ink)}
+  .icon-btn.on{background:linear-gradient(135deg, var(--accent2), var(--accent));color:#fff}
+  .icon-btn svg{width:15px;height:15px}
+  .vp-zoom{position:absolute;right:16px;bottom:14px;display:flex;flex-direction:column;gap:2px;background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--r-pill);padding:4px;box-shadow:var(--shadow-float)}
+  .vp-hud{position:absolute;left:16px;bottom:14px;display:flex;flex-direction:column;gap:4px;pointer-events:none}
+  .hud-chip{font-family:var(--font-mono);font-size:10.5px;color:var(--ink);background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);padding:5px 9px;border-radius:var(--r-pill);width:fit-content}
+
+  /* RIGHT: config */
+  .config{
+    position:absolute;top:12px;bottom:12px;right:12px;width:320px;z-index:30;
+    background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+    border:1px solid var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;min-height:0;
+    transform:translateX(calc(100% + 12px));transition:transform .3s cubic-bezier(.2,.9,.3,1);
+    box-shadow:var(--shadow-float);
+  }
+  .config.open{transform:translateX(0)}
+  .config .edge-tab{left:-28px;border-right:none;border-radius:var(--r-md) 0 0 var(--r-md)}
+  .config.open .edge-tab svg{transform:rotate(180deg)}
+  .seg{display:flex;gap:3px;padding:4px;background:var(--panel2);margin:12px 12px 0;border-radius:var(--r-pill)}
+  .seg button{flex:1;padding:8px 6px;border-radius:var(--r-pill);border:1px solid transparent;background:none;color:var(--dim);font-size:11.5px;font-weight:700;cursor:pointer;transition:.15s}
+  .seg button.on{background:linear-gradient(135deg, var(--accent2), var(--accent));color:#fff;box-shadow:0 4px 12px -4px var(--accent)}
+  .config-body{flex:1;overflow-y:auto;padding:16px}
+
+  .mat-card{border:1px solid var(--line);border-radius:var(--r-md);padding:13px;margin-bottom:12px;background:var(--panel2);transition:border-color .12s,box-shadow .12s}
+  .mat-card.drag-over-mat{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+  .mat-card .mh{display:flex;align-items:center;gap:9px;margin-bottom:11px}
+  .mat-swatch{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line2);position:relative;overflow:hidden;flex:0 0 auto;box-shadow:0 3px 10px -3px rgba(0,0,0,.35)}
+  .mat-swatch input[type=color]{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);border:none;padding:0;cursor:pointer}
+  .mat-name{font-size:12px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .field{margin-top:10px}
+  .field label{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);margin-bottom:5px}
+  .field label b{color:var(--ink);font-family:var(--font-mono);font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--accent)}
+  .tex-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+  .tex-btn{font-size:10.5px;padding:7px 8px;border-radius:var(--r-pill);border:1px solid var(--line2);background:color-mix(in srgb, var(--panel2) 60%, transparent);color:var(--dim);cursor:pointer;text-align:center;transition:.12s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tex-btn:hover{border-color:var(--accent);color:var(--ink)}
+  .tex-btn.has{border-color:var(--green);color:var(--green);background:color-mix(in srgb, var(--green) 12%, transparent)}
+  .tex-hint{font-size:10px;color:var(--dim);margin-top:8px;line-height:1.5}
+
+  /* Harita ayar/ölçü panelleri (Auto-PBR + adjust + tiling) */
+  .adj-panel{margin-top:8px;border-top:1px solid var(--line);padding-top:8px}
+  .adj-toggle{width:100%;text-align:left;font-size:10.5px;font-weight:700;color:var(--dim);background:none;border:none;cursor:pointer;padding:4px 0}
+  .adj-toggle:hover{color:var(--ink)}
+  .adj-body{margin-top:6px}
+  .adj-grid{display:flex;flex-direction:column;gap:7px}
+  .adj-row{display:flex;flex-direction:column;gap:3px;font-size:10.5px;color:var(--dim)}
+  .adj-row span{display:flex;justify-content:space-between}
+  .adj-row b{color:var(--ink);font-family:var(--font-mono);font-weight:600}
+  .adj-row select{width:100%;font-size:11px;padding:5px 6px;border-radius:var(--r-sm);border:1px solid var(--line2);background:var(--panel2);color:var(--ink)}
+  .adj-row.adj-bool{flex-direction:row;justify-content:space-between;align-items:center}
+  .adj-row.adj-color{flex-direction:row;justify-content:space-between;align-items:center}
+  .adj-row.adj-color input[type=color]{width:28px;height:20px;padding:0;border:1px solid var(--line2);border-radius:4px;cursor:pointer}
+  .adj-sub-head{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin:10px 0 6px}
+  .size-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:10px;color:var(--dim)}
+  .size-grid label{display:flex;flex-direction:column;gap:3px}
+  .size-grid input,.size-grid select{width:100%;font-size:11px;padding:5px 6px;border-radius:var(--r-sm);border:1px solid var(--line2);background:var(--panel2);color:var(--ink)}
+  .autopbr-box{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+  .ap-progress{margin-top:8px}
+  .ap-bar{height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+  .ap-fill{height:100%;width:0%;background:linear-gradient(90deg, var(--accent2), var(--accent));transition:width .15s}
+  .ap-label{font-size:10px;color:var(--dim);margin-top:5px}
+
+  .light-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .light-card{border:1.5px solid var(--line);border-radius:var(--r-md);padding:12px;cursor:pointer;transition:.12s;text-align:left;background:var(--panel2)}
+  .light-card:hover{border-color:var(--line2)}
+  .light-card.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+  .light-swatch{height:34px;border-radius:var(--r-sm);margin-bottom:8px}
+  .light-card b{font-size:11.5px;display:block}
+  .light-card span{font-size:10px;color:var(--dim)}
+  .slot{margin-bottom:20px}
+  .slot-head{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--dim);margin-bottom:10px}
+
+  .hdri-list{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;max-height:280px;overflow-y:auto;padding-right:2px}
+  .hdri-btn{position:relative;aspect-ratio:2/1;font-size:9.5px;font-weight:700;padding:0;border-radius:var(--r-sm);border:1px solid var(--line2);background-color:var(--panel2);background-size:cover;background-position:center;color:var(--dim);cursor:pointer;transition:border-color .12s;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .hdri-btn:hover{border-color:var(--accent)}
+  .hdri-btn.on{border-color:var(--accent)}
+  .hdri-btn.has-thumb.on::after{content:"";position:absolute;inset:0;border-radius:8px;box-shadow:0 0 0 2px var(--accent) inset;pointer-events:none}
+  .hdri-btn:disabled{opacity:.5;cursor:wait}
+  .hdri-btn.hdri-off{background-image:none;font-size:10px}
+  .hdri-chk{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--dim);margin-top:10px;cursor:pointer}
+
+  .cam-list{display:flex;flex-direction:column;gap:3px;max-height:210px;overflow-y:auto}
+  .cam-row{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:var(--r-sm);border:1px solid transparent;cursor:pointer;transition:.12s}
+  .cam-row:hover{background:var(--panel2)}
+  .cam-row.on{background:var(--panel2);border-color:var(--accent)}
+  .cam-row-name{flex:1;min-width:0;font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cam-row .si-icon{width:18px;height:18px}
+  .cam-row-input{flex:1;min-width:0;font-size:11.5px;font-weight:600;padding:2px 4px;border-radius:5px;border:1px solid var(--accent);background:var(--panel);color:var(--ink)}
+  .btn.danger{border-color:var(--err);color:var(--err)}
+  .btn.danger:hover{background:color-mix(in srgb, var(--err) 12%, transparent)}
+
+  /* Işık yönü — "Plot a route" tarzı dairesel cam dial (D5/Lumion sürükle-bırak pedi) */
+  .sun-pad-wrap{display:flex;align-items:center;gap:16px;margin-top:4px}
+  .sun-pad{
+    width:112px;height:112px;border-radius:50%;position:relative;flex:0 0 auto;cursor:crosshair;
+    background:radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--accent) 16%, var(--panel-solid)) 0%, var(--panel-solid) 72%);
+    border:1.5px solid var(--line2);touch-action:none;box-shadow:0 8px 22px -10px rgba(0,0,0,.4), inset 0 0 0 1px var(--line);
+  }
+  .sun-pad::before,.sun-pad::after{content:"";position:absolute;background:var(--line)}
+  .sun-pad::before{left:50%;top:8px;bottom:8px;width:1px;transform:translateX(-50%)}
+  .sun-pad::after{top:50%;left:8px;right:8px;height:1px;transform:translateY(-50%)}
+  .sun-pad .ring{position:absolute;inset:16px;border-radius:50%;border:1px dashed var(--line2)}
+  .sun-pad .center-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-size:9px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.4px;line-height:1.3;pointer-events:none;padding:0 22px}
+  .sun-pad .handle{
+    position:absolute;width:17px;height:17px;border-radius:50%;background:linear-gradient(135deg, var(--accent2), var(--accent));
+    border:2px solid var(--panel-solid);box-shadow:0 0 0 1px var(--accent), 0 0 14px 1px color-mix(in srgb, var(--accent) 70%, transparent), 0 2px 6px rgba(0,0,0,.3);
+    left:50%;top:8px;transform:translate(-50%,-50%);cursor:grab;
+  }
+  .sun-pad .handle:active{cursor:grabbing}
+  .sun-pad-info{flex:1;min-width:0}
+  .sun-pad-info .t{font-size:11px;color:var(--dim);margin-bottom:6px;line-height:1.5}
+  .sun-pad-info .vals{display:flex;gap:14px}
+  .sun-pad-info .vals div{font-size:10.5px;color:var(--dim)}
+  .sun-pad-info .vals b{display:block;color:var(--ink);font-family:var(--font-mono);font-size:13px;font-weight:700;margin-top:1px}
+  .temp-swatch{width:100%;height:8px;border-radius:4px;margin-top:6px;background:linear-gradient(90deg,#ff8c3c,#ffd9a0,#fff6ea,#cfe0ff,#9dbaff)}
+
+  .scene-tools .btn{width:100%;justify-content:center;margin-bottom:8px}
+  .empty-tab{padding:30px 10px;text-align:center;color:var(--dim);font-size:12px;line-height:1.6}
+
+  input[type=file]{display:none}
+
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(10px);background:var(--panel-solid);color:var(--ink);border:1px solid var(--line2);font-size:12.5px;font-weight:600;padding:11px 18px;border-radius:var(--r-pill);opacity:0;transition:.25s;pointer-events:none;z-index:99;max-width:80vw;text-align:center;box-shadow:var(--shadow-float)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--err);border-color:var(--err);color:#fff}
+
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+  ::-webkit-scrollbar-track{background:transparent}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important} }
+
+  /* ---- "warm" temaya özgü yapısal farklar: cam/blur yerine kalın siyah çerçeve,
+     ışıltılı gradyan yerine düz siyah pill buton, daha iri/kalın başlıklar ---- */
+  [data-theme="warm"] .topbar,
+  [data-theme="warm"] .scenepanel,
+  [data-theme="warm"] .config,
+  [data-theme="warm"] .vp-empty-card,
+  [data-theme="warm"] .product-title,
+  [data-theme="warm"] .vp-toolbar,
+  [data-theme="warm"] .vp-zoom,
+  [data-theme="warm"] .hud-chip,
+  [data-theme="warm"] .edge-tab,
+  [data-theme="warm"] .mat-card,
+  [data-theme="warm"] .light-card,
+  [data-theme="warm"] .hdri-btn,
+  [data-theme="warm"] .sun-pad,
+  [data-theme="warm"] .toast,
+  [data-theme="warm"] .modal{
+    border-width:1.5px; border-color:var(--line2);
+  }
+  [data-theme="warm"] .btn.primary,
+  [data-theme="warm"] .nav a.on,
+  [data-theme="warm"] .icon-btn.on,
+  [data-theme="warm"] .seg button.on,
+  [data-theme="warm"] .status-dot.ready{
+    background:var(--ink); color:#fff; box-shadow:none;
+  }
+  [data-theme="warm"] .brand{ font-weight:900; letter-spacing:-.3px }
+  [data-theme="warm"] .product-title .n{ font-weight:900 }
+  [data-theme="warm"] .light-card.on{ box-shadow:0 0 0 1.5px var(--ink) inset; border-color:var(--ink) }
+  [data-theme="warm"] .hdri-btn.on{ border-color:var(--ink) }
+  [data-theme="warm"] .hdri-btn.has-thumb.on::after{ box-shadow:0 0 0 2px var(--ink) inset }
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><span class="mark"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="16" width="20" height="20" rx="6" fill="var(--orange)" transform="rotate(-10 20 26)"/><rect x="15" y="11" width="20" height="20" rx="6" fill="var(--blue)" transform="rotate(6 25 21)"/><rect x="13" y="18" width="20" height="20" rx="6" fill="var(--pink)" transform="rotate(-2 23 28)"/></svg></span>Model &amp; Malzeme Editörü</div>
+    <nav class="nav">
+      <a href="model-material-editor.html" class="on">Editör</a>
+      <a href="../04_KUTUPHANE/material-library.html">Materyal Kütüphanesi</a>
+      <a href="../04_KUTUPHANE/model-library.html">Model Kütüphanesi</a>
+    </nav>
+    <div class="crumb">Configurator Studio / <b id="crumbName">Örnek Obje</b></div>
+    <div class="spacer"></div>
+    <div class="engine-status"><span class="status-dot" id="engineDot"></span><span id="engineText">Motor yükleniyor…</span></div>
+    <button class="theme-toggle" id="themeToggle" title="Tema: Koyu / Açık / Sıcak">
+      <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>
+      <svg id="themeIconWarm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M12 2c2 3 4 5.5 4 9a4 4 0 0 1-8 0c0-1 .3-1.8.8-2.6.3.9 1 1.6 1.2 1 .3-.9-.3-2-.3-3.4 0-1.6.9-3 2.3-4Z"/></svg>
+    </button>
+  </div>
+
+  <div class="body">
+    <div class="hover-zone left" id="hoverZoneLeft"></div>
+    <div class="hover-zone right" id="hoverZoneRight"></div>
+    <!-- LEFT -->
+    <div class="scenepanel" id="scenePanel">
+      <div class="sp-head">
+        <h2>Sahne</h2>
+        <p>Kendi 3D modelini içe aktar, malzemelerini düzenle, düzenlenmiş halini geri dışa aktar.</p>
+      </div>
+      <div class="import-drop" id="importDrop">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+        <b>Model İçe Aktar</b>
+        <span>.glb · .gltf · .obj</span>
+      </div>
+      <input type="file" id="fileInput" accept=".glb,.gltf,.obj">
+      <div class="item-list" id="itemList"></div>
+      <button class="edge-tab" id="toggleScene" title="Sahne panelini aç/kapat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+    </div>
+
+    <!-- CENTER -->
+    <div class="viewport-wrap" id="stageWrap">
+      <div id="stage-bg"></div>
+      <div id="canvasHost"></div>
+      <div class="vp-empty" id="vpEmpty">
+        <div class="vp-empty-card"><b>Sahne hazır</b><span>Sol panelden bir model sürükle ya da içe aktar</span></div>
+      </div>
+
+      <div class="product-title">
+        <div class="n" id="ptName">Örnek Obje</div>
+        <div class="s" id="ptSub">Yerleşik önizleme — kendi modelini içe aktarabilirsin</div>
+      </div>
+
+      <div class="vp-toolbar">
+        <button class="icon-btn" id="gizmoMove" title="Taşı (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><path d="m5 9-3 3 3 3M19 9l3 3-3 3M9 5l3-3 3 3M9 19l3 3 3-3"/></svg></button>
+        <button class="icon-btn" id="gizmoRotate" title="Döndür (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4V1L7.5 5 12 9V6a6 6 0 1 1-6 6"/></svg></button>
+        <button class="icon-btn" id="gizmoScale" title="Ölçekle (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+        <button class="icon-btn" id="gridToggle" title="Izgara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></button>
+        <button class="icon-btn" id="wireToggle" title="Tel kafes (wireframe)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 9 5v10l-9 5-9-5V7z"/><path d="M12 2v20M3 7l9 5 9-5M3 17l9-5 9 5"/></svg></button>
+        <button class="icon-btn" id="uvToggle" title="UV Grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 8h18M3 13h18M8 3v18M13 3v18"/></svg></button>
+        <button class="icon-btn" id="compareToggle" title="Öncesi/Sonrası karşılaştır"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M7 7H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3"/><path d="M17 7h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-3"/></svg></button>
+        <button class="icon-btn" id="resetView" title="Görünümü sıfırla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg></button>
+      </div>
+
+      <div class="vp-zoom">
+        <button class="icon-btn" id="zoomIn" title="Yakınlaştır"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M11 8v6M8 11h6M21 21l-4.3-4.3"/></svg></button>
+        <button class="icon-btn" id="zoomOut" title="Uzaklaştır"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-4.3-4.3"/></svg></button>
+      </div>
+
+      <div class="vp-hud">
+        <div class="hud-chip" id="hudLight">Aydınlatma: Stüdyo</div>
+        <div class="hud-chip" id="hudMesh">Mesh: 1 · Malzeme: 1</div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="config" id="configPanel">
+      <button class="edge-tab" id="toggleConfig" title="Ayarlar panelini aç/kapat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 6-6 6 6 6"/></svg>
+      </button>
+      <div class="seg">
+        <button class="on" data-tab="material">Malzeme</button>
+        <button data-tab="light">Aydınlatma</button>
+        <button data-tab="camera">Kamera</button>
+        <button data-tab="scene">Sahne</button>
+      </div>
+      <div class="config-body">
+        <div id="tab-material"></div>
+
+        <div id="tab-light" style="display:none">
+          <div class="slot">
+            <div class="slot-head">Ortam Ön Ayarı</div>
+            <div class="light-grid" id="lightGrid"></div>
+          </div>
+          <div class="slot">
+            <div class="slot-head">Ortam HDRI <span class="tex-hint" style="margin:0;display:inline">(gerçekçi yansıma/aydınlatma)</span></div>
+            <div class="hdri-list" id="hdriList"></div>
+            <div id="hdriExtra" style="display:none">
+              <div class="field">
+                <label>HDRI Yoğunluğu <b id="hdriIntensVal">100%</b></label>
+                <input type="range" id="hdriIntensity" min="10" max="300" value="100">
+              </div>
+              <div class="field">
+                <label>Döndürme <b id="hdriRotVal">0°</b></label>
+                <input type="range" id="hdriRotation" min="0" max="360" value="0">
+              </div>
+              <label class="hdri-chk"><input type="checkbox" id="hdriBgToggle"> Arkaplanda göster (küre olarak)</label>
+            </div>
+          </div>
+          <div class="slot">
+            <div class="slot-head">Işık Yönü</div>
+            <div class="sun-pad-wrap">
+              <div class="sun-pad" id="sunPad">
+                <div class="ring"></div>
+                <div class="center-label">Işık<br>Yönü</div>
+                <div class="handle" id="sunHandle"></div>
+              </div>
+              <div class="sun-pad-info">
+                <div class="t">Sürükleyerek konumlandır. Merkez = tepeden yumuşak ışık, kenar = alçak/dramatik açı.</div>
+                <div class="vals">
+                  <div>Azimut<b id="sunAzVal">45°</b></div>
+                  <div>Yükseklik<b id="sunElVal">70°</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="field">
+            <label>Işık Şiddeti <b id="intensVal">100%</b></label>
+            <input type="range" id="intensity" min="20" max="220" value="100">
+          </div>
+          <div class="field">
+            <label>Renk Sıcaklığı <b id="tempVal">5500K</b></label>
+            <input type="range" id="temperature" min="2700" max="10000" value="5500" step="50">
+            <div class="temp-swatch"></div>
+          </div>
+          <div class="field">
+            <label>Gölge Keskinliği <b id="shadowVal">Orta</b></label>
+            <input type="range" id="shadowSharp" min="0" max="100" value="55">
+          </div>
+          <div class="field">
+            <label>Pozlama (Exposure) <b id="exposVal">1.00</b></label>
+            <input type="range" id="exposure" min="40" max="200" value="100">
+          </div>
+        </div>
+
+        <div id="tab-camera" style="display:none">
+          <div class="slot">
+            <div class="slot-head">Kameralar</div>
+            <div class="cam-list" id="camList"></div>
+            <button class="btn" id="btnCamSaveNew" style="width:100%;justify-content:center;margin-top:8px">+ Kamera Kaydet</button>
+          </div>
+
+          <div class="slot">
+            <div class="slot-head">Projeksiyon</div>
+            <div class="seg" style="margin:0" id="camProjSeg">
+              <button class="on" data-proj="perspective">Perspektif</button>
+              <button data-proj="orthographic">Ortografik</button>
+            </div>
+          </div>
+
+          <div class="slot">
+            <div class="slot-head">Konum &amp; Hedef</div>
+            <div class="size-grid">
+              <label>Pos X<input type="number" id="camPosX" step="0.05"></label>
+              <label>Pos Y<input type="number" id="camPosY" step="0.05"></label>
+              <label>Pos Z<input type="number" id="camPosZ" step="0.05"></label>
+              <label>Hedef X<input type="number" id="camTgtX" step="0.05"></label>
+              <label>Hedef Y<input type="number" id="camTgtY" step="0.05"></label>
+              <label>Hedef Z<input type="number" id="camTgtZ" step="0.05"></label>
+            </div>
+          </div>
+
+          <div class="slot">
+            <div class="slot-head">Lens</div>
+            <div class="field">
+              <label>Sensör Ön Ayarı</label>
+              <select id="camSensorPreset">
+                <option value="full35">Tam Kare (36×24mm)</option>
+                <option value="apsc">APS-C (23.6×15.6mm)</option>
+                <option value="m43">Micro 4/3 (17.3×13mm)</option>
+                <option value="medium">Orta Format (43.8×32.9mm)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Odak Uzaklığı <b id="camFocalVal">33mm</b></label>
+              <input type="range" id="camFocal" min="8" max="300" value="33">
+            </div>
+            <div class="field">
+              <label>Görüş Açısı (FOV) <b id="camFovVal">40°</b></label>
+              <input type="range" id="camFov" min="5" max="140" value="40">
+            </div>
+            <div class="field" id="camOrthoZoomWrap" style="display:none">
+              <label>Ortografik Yakınlaştırma <b id="camOrthoZoomVal">1.00×</b></label>
+              <input type="range" id="camOrthoZoom" min="20" max="400" value="100">
+            </div>
+          </div>
+
+          <div class="slot">
+            <div class="slot-head">Görüntü Kırpma</div>
+            <div class="size-grid">
+              <label>Near Clip<input type="number" id="camNear" step="0.001" min="0.001"></label>
+              <label>Far Clip<input type="number" id="camFar" step="1" min="1"></label>
+            </div>
+          </div>
+
+          <div class="slot">
+            <div class="slot-head">Görüntü Ayarları</div>
+            <div class="field">
+              <label>Pozlama (Exposure) <b id="camExposureVal">1.00</b></label>
+              <input type="range" id="camExposure" min="20" max="300" value="100">
+            </div>
+            <div class="field">
+              <label>Gamma <b id="camGammaVal">1.00</b></label>
+              <input type="range" id="camGamma" min="40" max="250" value="100">
+            </div>
+            <div class="field">
+              <label>Kontrast <b id="camContrastVal">0</b></label>
+              <input type="range" id="camContrast" min="-100" max="100" value="0">
+            </div>
+            <div class="field">
+              <label>Parlaklık <b id="camBrightnessVal">0</b></label>
+              <input type="range" id="camBrightness" min="-50" max="50" value="0">
+            </div>
+            <div class="field">
+              <label>Doygunluk <b id="camSaturationVal">0</b></label>
+              <input type="range" id="camSaturation" min="-100" max="100" value="0">
+            </div>
+            <div class="field">
+              <label>Beyaz Dengesi <b id="camWbVal">5500K</b></label>
+              <input type="range" id="camWb" min="2700" max="10000" value="5500" step="50">
+            </div>
+            <button class="btn" id="btnCamImageReset" style="width:100%;justify-content:center;margin-top:6px">↺ Görüntü Ayarlarını Sıfırla</button>
+          </div>
+
+          <div class="slot">
+            <div class="slot-head">Otomatik Döndür</div>
+            <label class="hdri-chk"><input type="checkbox" id="camAutoRotate"> Sahneyi otomatik döndür</label>
+            <div class="field">
+              <label>Hız <b id="camAutoRotateSpeedVal">2.0</b></label>
+              <input type="range" id="camAutoRotateSpeed" min="1" max="100" value="20">
+            </div>
+          </div>
+
+          <div class="slot scene-tools">
+            <button class="btn" id="btnCamReset">↺ Bu Kamerayı Sıfırla</button>
+            <button class="btn" id="btnCamDuplicate">⧉ Çoğalt</button>
+            <button class="btn danger" id="btnCamDelete" style="display:none">🗑 Kamerayı Sil</button>
+          </div>
+        </div>
+
+        <div id="tab-scene" style="display:none">
+          <div class="slot">
+            <div class="slot-head">Dönüşüm</div>
+            <div class="field">
+              <label>Ölçek <b id="scaleVal">1.00×</b></label>
+              <input type="range" id="scaleRange" min="20" max="300" value="100">
+            </div>
+            <div class="size-grid">
+              <label>Pos X<input type="number" id="objPosX" step="0.05"></label>
+              <label>Pos Y<input type="number" id="objPosY" step="0.05"></label>
+              <label>Pos Z<input type="number" id="objPosZ" step="0.05"></label>
+              <label>Rot X°<input type="number" id="objRotX" step="1"></label>
+              <label>Rot Y°<input type="number" id="objRotY" step="1"></label>
+              <label>Rot Z°<input type="number" id="objRotZ" step="1"></label>
+            </div>
+            <label class="hdri-chk"><input type="checkbox" id="gizmoSnap"> Izgaraya yapış (Snap)</label>
+          </div>
+          <div class="slot scene-tools">
+            <button class="btn" id="btnFloor">⤓ Zemine Otur</button>
+            <button class="btn" id="btnRecenter">⊙ Görünümü Ortala</button>
+            <button class="btn" id="btnDelete">🗑 Aktif Modeli Kaldır</button>
+          </div>
+          <div class="slot">
+            <div class="slot-head">Dışa Aktarma &amp; Kayıt</div>
+            <div class="scene-tools">
+              <button class="btn" id="btnSaveModelLib" disabled>💾 Modeli Kütüphaneye Kaydet</button>
+              <button class="btn" id="btnShot" disabled>📷 Ekran Görüntüsü</button>
+              <button class="btn primary" id="btnExport" disabled>⬇ GLB Dışa Aktar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { generateAutoPBR, SURFACE_PRESETS } from './js/autopbr.js';
+import { ADJUST_SCHEMA, defaultParams, applyAdjust, applyNormalMaterialParams, applyHeightMaterialParams, debounce } from './js/map-adjust.js';
+import { getUVGridTexture } from './js/preview-objects.js';
+import { dbPut, dbGet, blankMaterial, blankModel } from '../04_KUTUPHANE/js/db.js';
+import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { ColorGradeShader } from './js/colorgrade-shader.js';
+
+const $ = s => document.querySelector(s);
+function toast(msg, isErr){
+  const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (isErr?" err":"");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 3200);
+}
+
+/* ---- Renkli rozet paleti — sahne listesi / kart göstergeleri için sırayla döner ---- */
+const BADGE_PALETTE = ["--pink", "--blue", "--orange", "--green", "--purple"];
+function badgeColor(i){
+  const v = getComputedStyle(document.documentElement).getPropertyValue(BADGE_PALETTE[i % BADGE_PALETTE.length]).trim();
+  return v || "#888";
+}
+
+/* ---- Tema geçişi (koyu / açık / sıcak) — sistem tercihini değil, kullanıcının seçimini
+   kalıcı tutar; localStorage anahtarı üç sayfa (editör + 2 kütüphane) arasında paylaşılır. ---- */
+const THEME_ORDER = ["dark", "light", "warm"];
+function applyThemeIcon(theme){
+  $("#themeIconSun").style.display = theme === "light" ? "" : "none";
+  $("#themeIconMoon").style.display = theme === "dark" ? "" : "none";
+  $("#themeIconWarm").style.display = theme === "warm" ? "" : "none";
+}
+(function initTheme(){
+  const saved = localStorage.getItem("cs_theme") || "dark";
+  document.documentElement.dataset.theme = saved;
+  applyThemeIcon(saved);
+})();
+$("#themeToggle").addEventListener("click", ()=>{
+  const cur = document.documentElement.dataset.theme || "dark";
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(cur) + 1) % THEME_ORDER.length];
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem("cs_theme", next);
+  applyThemeIcon(next);
+});
+
+/* ================= Three.js temel kurulum ================= */
+const host = $("#canvasHost");
+const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.0;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.VSMShadowMap; // radius ile gerçek yumuşaklık kontrolü sağlar
+host.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+// `camera`/`controls` birer sabit DEĞİL — Ortografik/Perspektif geçişinde (bkz. switchCameraType)
+// gerçek nesne değişir, bu iki değişken her zaman "şu an aktif olan" kamera/kontrole işaret eder.
+// Bu sayede dosyadaki mevcut ~28 `camera.`/`controls.` kullanımı YENİDEN YAZILMADAN doğru çalışmaya
+// devam eder (closure'lar değeri değil bağlamı yakalar).
+const perspCamera = new THREE.PerspectiveCamera(40, 1, 0.01, 200);
+perspCamera.position.set(2.4, 1.7, 2.8);
+let orthoCamera = null; // tembel oluşturulur (bkz. switchCameraType) — her zaman gerekmeyebilir
+let perspFovMemory = 40; // Ortografik'ten Perspektif'e dönerken son FOV'u hatırlamak için
+let camera = perspCamera;
+
+function makeOrbitControls(cam){
+  const c = new OrbitControls(cam, renderer.domElement);
+  c.enableDamping = true;
+  c.dampingFactor = 0.08;
+  c.minDistance = 0.3;
+  c.maxDistance = 40;
+  // Kamera tipi değişince (switchCameraType) bu OrbitControls nesnesi YENİDEN oluşturulur —
+  // bu yüzden "change" dinleyicisi burada, her yeni örnekte tekrar bağlanacak şekilde duruyor.
+  c.addEventListener("change", ()=>{
+    if(typeof syncCameraFieldsFromLive === "function" && document.getElementById("tab-camera")?.style.display !== "none") syncCameraFieldsFromLive();
+  });
+  return c;
+}
+let controls = makeOrbitControls(camera);
+controls.target.set(0, 0.5, 0);
+
+// Postprocessing: RenderPass + ColorGradePass (Gamma/Kontrast/Parlaklık/Doygunluk/Beyaz Dengesi).
+// `renderPass.camera` kamera tipi değişince (switchCameraType) elle güncellenir — EffectComposer
+// kendi içinde kamerayı SABİT saklar, "canlı" bir referans değildir.
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+const colorGradePass = new ShaderPass(ColorGradeShader);
+composer.addPass(colorGradePass);
+
+// Transform gizmo (Taşı/Döndür/Ölçekle) — sahneye eklenen görsel "helper" r162+ sürümlerde
+// getHelper() ile alınır; eski sürümlerde TransformControls'un kendisi doğrudan eklenebilirdi,
+// bu yüzden ikisini de destekleyen savunmacı bir kontrol var.
+const transformControls = new TransformControls(camera, renderer.domElement);
+const transformGizmoObj = (typeof transformControls.getHelper === "function") ? transformControls.getHelper() : transformControls;
+scene.add(transformGizmoObj);
+transformControls.addEventListener("dragging-changed", e=>{ controls.enabled = !e.value; });
+transformControls.addEventListener("objectChange", ()=>{ syncTransformFieldsFromActive(); });
+
+// PBR ortam (stüdyo yansımaları) — başarısız olursa sessizce atla. `pmrem` ve
+// `roomEnvTexture` HDRI sistemi tarafından da (aşağıda) yeniden kullanılır: bir HDRI
+// seçilmediğinde veya "Kapalı" seçildiğinde sahne bu varsayılan stüdyo ortamına döner.
+let pmrem = null, roomEnvTexture = null;
+try{
+  pmrem = new THREE.PMREMGenerator(renderer);
+  roomEnvTexture = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environment = roomEnvTexture;
+}catch(e){ console.warn("Ortam (environment) kurulamadı, düz ışıklandırmayla devam:", e); }
+
+const keyLight = new THREE.DirectionalLight(0xffffff, 3.2);
+keyLight.position.set(3, 5, 2);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048,2048);
+// Gölge kamerasının near/far'ı eskiden varsayılan (0.5–500) kalıyordu — ışık sahneden
+// yalnızca ~4.5 birim uzakta olduğu için bu, derinlik hassasiyetinin neredeyse tamamının
+// boşa gitmesine (gölge "acne"/moiré) yol açıyordu. Işık her zaman sabit 4.5 birim uzakta
+// konumlandığı için (bkz. setSunDirection) dar ve sabit bir near/far yeterli ve çok daha hassas.
+keyLight.shadow.camera.near = 0.5;
+keyLight.shadow.camera.far = 12;
+keyLight.shadow.radius = 8;          // gölge keskinliği/yumuşaklığı (VSMShadowMap ile)
+keyLight.shadow.blurSamples = 16;
+keyLight.shadow.bias = -0.00045;
+keyLight.shadow.normalBias = 0.02;   // VSM ile birlikte peter-panning/acne'i bias'tan daha güvenilir azaltır
+const fillLight = new THREE.HemisphereLight(0xffffff, 0x3a3a3a, 0.65);
+scene.add(keyLight, keyLight.target, fillLight);
+
+// Gölge kamerasının sol/sağ/üst/alt sınırlarını değiştirmek TEK BAŞINA hiçbir şey yapmaz —
+// OrthographicCamera bu değerleri yalnızca updateProjectionMatrix() çağrıldığında gerçek
+// projeksiyon matrisine işler. Bunu unutmak (önceki sürümdeki kök hata) sahnede her zaman
+// kurucudaki varsayılan -5..5 frustum'un kullanılmasına, dolayısıyla gölgelerin gerekenden çok
+// daha geniş/bulanık/hatalı görünmesine yol açıyordu.
+function fitShadowFrustum(radius){
+  const r = THREE.MathUtils.clamp(radius, 1, 6);
+  const cam = keyLight.shadow.camera;
+  cam.left = -r; cam.right = r; cam.top = r; cam.bottom = -r;
+  cam.updateProjectionMatrix();
+}
+fitShadowFrustum(2.2); // ilk obje yüklenene kadar makul bir varsayılan
+
+/* ---- ışık yönü (azimut/yükseklik → 3B konum) ---- */
+function kelvinToRGB(kelvin){
+  const t = kelvin/100;
+  let r,g,b;
+  if(t<=66){ r=255; g=99.4708025861*Math.log(t)-161.1195681661; }
+  else{ r=329.698727446*Math.pow(t-60,-0.1332047592); g=288.1221695283*Math.pow(t-60,-0.0755148492); }
+  if(t>=66) b=255; else if(t<=19) b=0; else b=138.5177312231*Math.log(t-10)-305.0447927307;
+  const c=v=>Math.min(255,Math.max(0,v))/255;
+  return new THREE.Color(c(r), c(g), c(b));
+}
+// Gölge hedefi artık sabit (0, 0.5, 0) değil, aktif objenin gerçek sınır-kutusu merkezini takip
+// eder (bkz. frameActive). Sabit hedef, merkezi orijinde olmayan içe aktarılmış modellerde ışığın
+// objeyi ıskalamasına ve gölgenin eksik/kırpılmış görünmesine yol açıyordu.
+let shadowTarget = new THREE.Vector3(0, 0.5, 0);
+function setSunDirection(azDeg, elDeg){
+  const az = THREE.MathUtils.degToRad(azDeg), el = THREE.MathUtils.degToRad(elDeg);
+  const dist = 4.5;
+  keyLight.position.set(
+    shadowTarget.x + dist*Math.cos(el)*Math.cos(az),
+    shadowTarget.y + Math.max(dist*Math.sin(el), 0.3),
+    shadowTarget.z + dist*Math.cos(el)*Math.sin(az)
+  );
+  keyLight.target.position.copy(shadowTarget);
+  keyLight.target.updateMatrixWorld();
+}
+
+const grid = new THREE.GridHelper(10, 20, 0x808080, 0x808080);
+grid.material.opacity = 0.12; grid.material.transparent = true;
+grid.visible = false;
+scene.add(grid);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(30,30), new THREE.ShadowMaterial({opacity:0.22}));
+ground.rotation.x = -Math.PI/2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+function resize(){
+  const w = host.clientWidth, h = host.clientHeight;
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  if(camera.isPerspectiveCamera){
+    camera.aspect = w/h;
+  }else{
+    // OrthographicCamera'da "aspect" yok — dikey ölçeği koruyup yatay frustum'u yeniden hesapla.
+    const halfH = (camera.top - camera.bottom)/2 || 1;
+    camera.left = -halfH*(w/h); camera.right = halfH*(w/h);
+  }
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(host);
+resize();
+
+renderer.setAnimationLoop(()=>{ controls.update(); composer.render(); });
+
+/* ================= Örnek obje (ilk açılışta) ================= */
+function makeSampleObject(){
+  const g = new THREE.Group();
+  const seatMat = new THREE.MeshStandardMaterial({ color:0xd8cbb0, roughness:0.75, metalness:0.02, name:"Kumaş" });
+  const frameMat = new THREE.MeshStandardMaterial({ color:0xb9835a, roughness:0.55, metalness:0.05, name:"Gövde (Ahşap)" });
+  const legMat = new THREE.MeshStandardMaterial({ color:0x2a2b2f, roughness:0.35, metalness:0.75, name:"Ayaklar (Metal)" });
+
+  const seat = new THREE.Mesh(new THREE.BoxGeometry(0.62,0.09,0.62), seatMat); seat.position.set(0,0.42,0);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(0.62,0.55,0.09), backMat_(seatMat)); back.position.set(0,0.72,-0.26);
+  const armL = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.24,0.6), frameMat); armL.position.set(-0.32,0.55,0);
+  const armR = new THREE.Mesh(new THREE.BoxGeometry(0.06,0.24,0.6), frameMat); armR.position.set(0.32,0.55,0);
+  const legGeo = new THREE.CylinderGeometry(0.018,0.018,0.34,16);
+  const legPositions = [[-0.26,0.17,-0.24],[0.26,0.17,-0.24],[-0.26,0.17,0.24],[0.26,0.17,0.24]];
+  const legs = legPositions.map(p=>{ const l=new THREE.Mesh(legGeo, legMat); l.position.set(...p); return l; });
+
+  [seat, back, armL, armR, ...legs].forEach(m=>{ m.castShadow=true; m.receiveShadow=true; g.add(m); });
+  g.userData.displayName = "Atlas Lounge Chair (örnek)";
+  return g;
+}
+function backMat_(seatMat){ return seatMat; } // sırt minderi ile aynı kumaş malzemesini paylaşır
+
+/* ================= Sahne / içe aktarma yönetimi ================= */
+const gltfLoader = new GLTFLoader();
+const objLoader = new OBJLoader();
+const exporter = new GLTFExporter();
+
+let items = [];      // {id, name, group, baseScale, isSample}
+let activeId = null;
+
+function normalizeMesh(mesh){
+  mesh.castShadow = true; mesh.receiveShadow = true;
+  const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+  const normalized = mats.map(m=>{
+    if(!m) return new THREE.MeshStandardMaterial({color:0xcccccc, roughness:0.6, metalness:0.05});
+    if(m.isMeshStandardMaterial || m.isMeshPhysicalMaterial) return m;
+    return new THREE.MeshStandardMaterial({
+      color: m.color ? m.color.clone() : new THREE.Color(0xcccccc),
+      map: m.map || null,
+      name: m.name || "",
+      roughness: 0.6, metalness: 0.05,
+    });
+  });
+  mesh.material = Array.isArray(mesh.material) ? normalized : normalized[0];
+}
+
+function collectMaterials(root){
+  const map = new Map();
+  root.traverse(o=>{
+    if(o.isMesh){
+      normalizeMesh(o);
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      mats.forEach(m=>{ if(m && !map.has(m.uuid)) map.set(m.uuid, m); });
+    }
+  });
+  return [...map.values()];
+}
+
+// Gölge kamerasını aktif objenin GÜNCEL sınır-kutusuna göre yeniden hedefler ve daraltır.
+// Yalnızca kamerayı ortalayan frameActive()'den değil, objeyi büyüten/küçülten veya taşıyan
+// her işlemden (ölçek slider'ı, zemine oturt) sonra da çağrılmalı — aksi halde obje büyütüldüğünde
+// gölge frustum'u eski (küçük) boyutta kalır ve gölge yeniden kırpılır/kaybolur.
+function refreshShadowForActive(){
+  const item = items.find(i=>i.id===activeId);
+  if(!item) return;
+  const box = new THREE.Box3().setFromObject(item.group);
+  if(box.isEmpty()) return;
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z, 0.05);
+  shadowTarget.copy(center);
+  fitShadowFrustum(maxDim * 0.75 + 0.4);
+  setSunDirection(sunAz, sunEl);
+}
+
+// dirOverride verilmezse mevcut (isometrik-vari) varsayılan yönü kullanır — bu yüzden dosyadaki
+// tüm mevcut `frameActive()` (argümansız) çağrıları davranışını AYNEN korur.
+function frameActive(dirOverride){
+  if(!activeId) return;
+  const item = items.find(i=>i.id===activeId);
+  const box = new THREE.Box3().setFromObject(item.group);
+  if(box.isEmpty()) return;
+  const size = box.getSize(new THREE.Vector3());
+  const center = box.getCenter(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z, 0.05);
+  const dir = new THREE.Vector3(...(dirOverride || [1, 0.65, 1])).normalize();
+  controls.target.copy(center);
+  if(camera.isPerspectiveCamera){
+    const fitDist = (maxDim / (2*Math.tan(THREE.MathUtils.degToRad(camera.fov)/2))) * 1.7;
+    camera.position.copy(center).addScaledVector(dir, fitDist);
+    camera.near = Math.max(fitDist/200, 0.005);
+    camera.far = fitDist*30;
+  }else{
+    // Ortografik'te "mesafe" görüntü ölçeğini etkilemez — ölçek frustum boyutuyla belirlenir.
+    const dist = maxDim * 3;
+    camera.position.copy(center).addScaledVector(dir, dist);
+    const halfH = maxDim * 0.85;
+    const aspect = host.clientWidth / host.clientHeight;
+    camera.left = -halfH*aspect; camera.right = halfH*aspect;
+    camera.top = halfH; camera.bottom = -halfH;
+    camera.near = 0.01; camera.far = dist*10;
+  }
+  camera.updateProjectionMatrix();
+  controls.update();
+  refreshShadowForActive();
+  syncCameraFieldsFromLive();
+}
+function setCameraPreset(dirArr){ frameActive(dirArr); }
+
+/* ================= Kamera Sistemi: çoklu kayıtlı kamera + lens + projeksiyon ================= */
+const SENSOR_PRESETS = {
+  full35: { label:"Tam Kare (36×24mm)", w:36, h:24 },
+  apsc:   { label:"APS-C (23.6×15.6mm)", w:23.6, h:15.6 },
+  m43:    { label:"Micro 4/3 (17.3×13mm)", w:17.3, h:13 },
+  medium: { label:"Orta Format (43.8×32.9mm)", w:43.8, h:32.9 },
+};
+// Three.js kamera fov'u DİKEY görüş açısıdır (derece) — sensör YÜKSEKLİĞİne göre gerçek
+// odak-uzaklığı (mm) hesaplanır, tanıdık bir "lens" hissi versin diye.
+function focalToFov(focalMM, sensorHeightMM){ return THREE.MathUtils.radToDeg(2 * Math.atan(sensorHeightMM / (2*focalMM))); }
+function fovToFocal(fovDeg, sensorHeightMM){ return sensorHeightMM / (2 * Math.tan(THREE.MathUtils.degToRad(fovDeg)/2)); }
+
+function makeCameraDef(id, name, isCustom, extra){
+  return Object.assign({
+    id, name, isCustom,
+    type: "perspective",           // "perspective" | "orthographic"
+    dir: null,                     // yalnızca isCustom=false: [x,y,z] yön vektörü, her seçimde aktif objeye göre yeniden hesaplanır
+    position: null, target: null,  // yalnızca isCustom=true: kaydedilmiş mutlak konum
+    fov: 40, near: 0.01, far: 200,
+    sensorPreset: "full35", sensorWidth: 36, sensorHeight: 24,
+    orthoZoom: 1,
+  }, extra);
+}
+let CAMERAS = [
+  makeCameraDef("cam_front",  "Front",       false, { dir:[0, 0.15, 1] }),
+  makeCameraDef("cam_back",   "Back",        false, { dir:[0, 0.15, -1] }),
+  makeCameraDef("cam_left",   "Left",        false, { dir:[-1, 0.15, 0] }),
+  makeCameraDef("cam_right",  "Right",       false, { dir:[1, 0.15, 0] }),
+  makeCameraDef("cam_top",    "Top",         false, { dir:[0, 1, 0.01] }),
+  makeCameraDef("cam_bottom", "Bottom",      false, { dir:[0, -1, 0.01] }),
+  makeCameraDef("cam_persp",  "Perspective", false, { dir:[1, 0.65, 1] }),
+  makeCameraDef("cam_iso",    "Isometric",   false, { dir:[1, 0.65, 1], type:"orthographic" }),
+];
+let activeCameraId = "cam_persp";
+let customCameraCounter = 0;
+
+function switchCameraType(type){
+  // DİKKAT: camera.isPerspectiveCamera geçerli bir OrthographicCamera'da da undefined'dır
+  // (o da kendi isOrthographicCamera=true bayrağını taşır) — bu yüzden "tanımsız mı" değil,
+  // "zaten istenen tipte mi" diye karşılaştırıyoruz.
+  const currentlyPersp = !!camera.isPerspectiveCamera;
+  if((type === "perspective") === currentlyPersp) return; // zaten o tipte
+  const w = host.clientWidth, h = host.clientHeight;
+  const oldPos = camera.position.clone();
+  const oldTarget = controls.target.clone();
+  const oldNear = camera.near, oldFar = camera.far;
+  const oldAutoRotate = controls.autoRotate, oldAutoRotateSpeed = controls.autoRotateSpeed;
+  controls.dispose();
+  if(type === "orthographic"){
+    perspFovMemory = camera.fov;
+    if(!orthoCamera) orthoCamera = new THREE.OrthographicCamera(-1,1,1,-1,0.01,200);
+    const dist = Math.max(0.05, oldPos.distanceTo(oldTarget));
+    const halfH = dist * Math.tan(THREE.MathUtils.degToRad(perspFovMemory)/2);
+    const aspect = w/h;
+    orthoCamera.left = -halfH*aspect; orthoCamera.right = halfH*aspect;
+    orthoCamera.top = halfH; orthoCamera.bottom = -halfH;
+    orthoCamera.near = oldNear; orthoCamera.far = oldFar;
+    orthoCamera.zoom = 1;
+    orthoCamera.position.copy(oldPos);
+    orthoCamera.updateProjectionMatrix();
+    camera = orthoCamera;
+  }else{
+    perspCamera.position.copy(oldPos);
+    perspCamera.fov = perspFovMemory || 40;
+    perspCamera.aspect = w/h;
+    perspCamera.near = oldNear; perspCamera.far = oldFar;
+    perspCamera.updateProjectionMatrix();
+    camera = perspCamera;
+  }
+  controls = makeOrbitControls(camera);
+  controls.target.copy(oldTarget);
+  controls.autoRotate = oldAutoRotate;
+  controls.autoRotateSpeed = oldAutoRotateSpeed;
+  controls.update();
+  renderPass.camera = camera; // EffectComposer kamerayı canlı takip etmez, elle güncellenmeli
+  if(typeof transformControls !== "undefined") transformControls.camera = camera;
+  if(typeof attachGizmoToActive === "function") attachGizmoToActive(); // TransformControls henüz kurulmadıysa (bu fazın sonraki adımı) sessizce atlanır
+  $("#camOrthoZoomWrap").style.display = camera.isPerspectiveCamera ? "none" : "block";
+}
+
+function applyCameraDef(def){
+  activeCameraId = def.id;
+  switchCameraType(def.type);
+  camera.near = def.near; camera.far = def.far;
+  if(!def.isCustom && def.dir){
+    frameActive(def.dir);
+  }else if(def.position && def.target){
+    camera.position.set(def.position.x, def.position.y, def.position.z);
+    controls.target.set(def.target.x, def.target.y, def.target.z);
+  }
+  if(camera.isPerspectiveCamera){ camera.fov = def.fov; }
+  else{ camera.zoom = def.orthoZoom || 1; }
+  camera.updateProjectionMatrix();
+  controls.update();
+  syncCameraFieldsFromLive();
+  renderCameraList();
+}
+
+function currentCameraDef(){ return CAMERAS.find(c=>c.id===activeCameraId) || CAMERAS[0]; }
+
+function saveCurrentAsCamera(overwrite){
+  const existing = overwrite ? currentCameraDef() : null;
+  const id = existing ? existing.id : ("cam_custom_" + Math.random().toString(36).slice(2,8));
+  const name = existing ? existing.name : ("Custom Camera " + String(++customCameraCounter).padStart(2,"0"));
+  const def = makeCameraDef(id, name, true, {
+    type: camera.isPerspectiveCamera ? "perspective" : "orthographic",
+    position: { x:camera.position.x, y:camera.position.y, z:camera.position.z },
+    target: { x:controls.target.x, y:controls.target.y, z:controls.target.z },
+    fov: camera.isPerspectiveCamera ? camera.fov : perspFovMemory,
+    near: camera.near, far: camera.far,
+    orthoZoom: camera.isPerspectiveCamera ? 1 : camera.zoom,
+  });
+  const idx = CAMERAS.findIndex(c=>c.id===id);
+  if(idx>=0) CAMERAS[idx] = def; else CAMERAS.push(def);
+  activeCameraId = id;
+  renderCameraList();
+  toast("Kamera kaydedildi: " + def.name);
+}
+function duplicateCamera(id){
+  const src = CAMERAS.find(c=>c.id===id);
+  if(!src) return;
+  const copy = JSON.parse(JSON.stringify(src));
+  copy.id = "cam_custom_" + Math.random().toString(36).slice(2,8);
+  copy.name = src.name + " (kopya)";
+  copy.isCustom = true;
+  if(!copy.position || !copy.target){
+    // Ön ayar kameranın kopyası — o an ekranda görünen konumu mutlak olarak dondurur.
+    copy.position = { x:camera.position.x, y:camera.position.y, z:camera.position.z };
+    copy.target = { x:controls.target.x, y:controls.target.y, z:controls.target.z };
+    copy.dir = null;
+  }
+  CAMERAS.push(copy);
+  applyCameraDef(copy);
+  toast("Kamera çoğaltıldı: " + copy.name);
+}
+function deleteCamera(id){
+  const idx = CAMERAS.findIndex(c=>c.id===id);
+  if(idx<0) return;
+  if(!CAMERAS[idx].isCustom){ toast("Hazır kameralar silinemez.", true); return; }
+  const wasActive = activeCameraId===id;
+  CAMERAS.splice(idx,1);
+  if(wasActive && CAMERAS.length) applyCameraDef(CAMERAS[0]);
+  else renderCameraList();
+}
+function renameCamera(id, newName){
+  const cam = CAMERAS.find(c=>c.id===id);
+  if(cam && newName.trim()){ cam.name = newName.trim(); renderCameraList(); }
+}
+
+function renderCameraList(){
+  $("#camList").innerHTML = CAMERAS.map(c=>`
+    <div class="cam-row ${c.id===activeCameraId?'on':''}" data-camid="${c.id}">
+      <span class="cam-row-name" data-camname="${c.id}">${c.name}</span>
+      <button class="si-icon" data-camdup="${c.id}" title="Çoğalt">${COPY_ICON}</button>
+    </div>`).join("");
+  $("#camList").querySelectorAll(".cam-row").forEach(row=>{
+    row.addEventListener("click", e=>{
+      if(e.target.closest("[data-camdup],[data-camname]")) return;
+      applyCameraDef(CAMERAS.find(c=>c.id===row.dataset.camid));
+    });
+  });
+  $("#camList").querySelectorAll("[data-camdup]").forEach(btn=>{
+    btn.addEventListener("click", e=>{ e.stopPropagation(); duplicateCamera(btn.dataset.camdup); });
+  });
+  $("#camList").querySelectorAll("[data-camname]").forEach(nameEl=>{
+    nameEl.addEventListener("dblclick", e=>{
+      e.stopPropagation();
+      const id = nameEl.closest(".cam-row").dataset.camid;
+      const input = document.createElement("input");
+      input.type = "text"; input.className = "cam-row-input"; input.value = nameEl.textContent;
+      nameEl.replaceWith(input); input.focus(); input.select();
+      const commit = () => renameCamera(id, input.value);
+      input.addEventListener("blur", commit);
+      input.addEventListener("keydown", ev=>{ if(ev.key==="Enter") input.blur(); if(ev.key==="Escape"){ input.value=""; input.blur(); } });
+    });
+  });
+  const cur = currentCameraDef();
+  $("#btnCamDelete").style.display = cur?.isCustom ? "" : "none";
+}
+
+// Konum/hedef/near-far/FOV alanlarını CANLI kamera durumundan senkronlar — sürükle-döndür ile
+// bakış değiştiğinde de sayısal alanlar güncel kalsın diye (OrbitControls'un "change" event'i ile).
+function syncCameraFieldsFromLive(){
+  $("#camPosX").value = camera.position.x.toFixed(2);
+  $("#camPosY").value = camera.position.y.toFixed(2);
+  $("#camPosZ").value = camera.position.z.toFixed(2);
+  $("#camTgtX").value = controls.target.x.toFixed(2);
+  $("#camTgtY").value = controls.target.y.toFixed(2);
+  $("#camTgtZ").value = controls.target.z.toFixed(2);
+  $("#camNear").value = camera.near;
+  $("#camFar").value = Math.round(camera.far);
+  const fovDeg = camera.isPerspectiveCamera ? camera.fov : perspFovMemory;
+  $("#camFov").value = Math.round(fovDeg);
+  $("#camFovVal").textContent = Math.round(fovDeg) + "°";
+  const focal = fovToFocal(fovDeg, curSensorH());
+  $("#camFocal").value = Math.round(focal);
+  $("#camFocalVal").textContent = Math.round(focal) + "mm";
+  $("#camOrthoZoomWrap").style.display = camera.isPerspectiveCamera ? "none" : "block";
+  if(!camera.isPerspectiveCamera){
+    $("#camOrthoZoom").value = Math.round((camera.zoom||1)*100);
+    $("#camOrthoZoomVal").textContent = (camera.zoom||1).toFixed(2) + "×";
+  }
+  document.querySelectorAll('[data-proj]').forEach(b=> b.classList.toggle("on", b.dataset.proj === (camera.isPerspectiveCamera?"perspective":"orthographic")));
+}
+function curSensorH(){ return +($("#camSensorPreset")?.value ? SENSOR_PRESETS[$("#camSensorPreset").value].h : 24); }
+
+$("#btnCamSaveNew").addEventListener("click", ()=> saveCurrentAsCamera(false));
+$("#btnCamDuplicate").addEventListener("click", ()=> duplicateCamera(activeCameraId));
+$("#btnCamDelete").addEventListener("click", ()=> deleteCamera(activeCameraId));
+$("#btnCamReset").addEventListener("click", ()=>{
+  const def = currentCameraDef();
+  if(def && !def.isCustom){ frameActive(def.dir); }
+  else{ camera.fov = 40; perspFovMemory = 40; camera.updateProjectionMatrix(); frameActive(); }
+  syncCameraFieldsFromLive();
+});
+
+document.querySelectorAll('[data-proj]').forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    switchCameraType(btn.dataset.proj);
+    document.querySelectorAll('[data-proj]').forEach(b=>b.classList.toggle("on", b===btn));
+    syncCameraFieldsFromLive();
+  });
+});
+
+["camPosX","camPosY","camPosZ","camTgtX","camTgtY","camTgtZ"].forEach(id=>{
+  $("#"+id).addEventListener("input", ()=>{
+    camera.position.set(+$("#camPosX").value||0, +$("#camPosY").value||0, +$("#camPosZ").value||0);
+    controls.target.set(+$("#camTgtX").value||0, +$("#camTgtY").value||0, +$("#camTgtZ").value||0);
+    controls.update();
+  });
+});
+$("#camNear").addEventListener("input", e=>{ camera.near = Math.max(0.001, +e.target.value||0.01); camera.updateProjectionMatrix(); });
+$("#camFar").addEventListener("input", e=>{ camera.far = Math.max(1, +e.target.value||200); camera.updateProjectionMatrix(); });
+
+$("#camSensorPreset").addEventListener("change", e=>{
+  const s = SENSOR_PRESETS[e.target.value];
+  // Sensör değişince odak uzaklığını SABİT tutup FOV'u yeniden hesapla (fiziksel olarak doğru davranış).
+  const focal = +$("#camFocal").value || 33;
+  const fov = focalToFov(focal, s.h);
+  if(camera.isPerspectiveCamera){ camera.fov = fov; camera.updateProjectionMatrix(); } else { perspFovMemory = fov; }
+  syncCameraFieldsFromLive();
+});
+$("#camFocal").addEventListener("input", e=>{
+  const focal = +e.target.value;
+  const fov = focalToFov(focal, curSensorH());
+  $("#camFocalVal").textContent = focal + "mm";
+  if(camera.isPerspectiveCamera){ camera.fov = fov; camera.updateProjectionMatrix(); } else { perspFovMemory = fov; }
+  $("#camFov").value = Math.round(fov); $("#camFovVal").textContent = Math.round(fov) + "°";
+});
+$("#camFov").addEventListener("input", e=>{
+  const fov = +e.target.value;
+  $("#camFovVal").textContent = fov + "°";
+  if(camera.isPerspectiveCamera){ camera.fov = fov; camera.updateProjectionMatrix(); } else { perspFovMemory = fov; }
+  const focal = fovToFocal(fov, curSensorH());
+  $("#camFocal").value = Math.round(focal); $("#camFocalVal").textContent = Math.round(focal) + "mm";
+});
+$("#camOrthoZoom").addEventListener("input", e=>{
+  const z = (+e.target.value)/100;
+  $("#camOrthoZoomVal").textContent = z.toFixed(2) + "×";
+  if(!camera.isPerspectiveCamera){ camera.zoom = z; camera.updateProjectionMatrix(); }
+});
+
+$("#camAutoRotate").addEventListener("change", e=>{ controls.autoRotate = e.target.checked; });
+$("#camAutoRotateSpeed").addEventListener("input", e=>{
+  const v = (+e.target.value)/10;
+  controls.autoRotateSpeed = v;
+  $("#camAutoRotateSpeedVal").textContent = v.toFixed(1);
+});
+
+/* ---- Görüntü Ayarları — ColorGradePass (canlı önizleme + ekran görüntüsü/render'a yansır) ---- */
+$("#camExposure").addEventListener("input", e=> setExposure((+e.target.value)/100));
+$("#camGamma").addEventListener("input", e=>{
+  const v = (+e.target.value)/100;
+  colorGradePass.uniforms.uGamma.value = v;
+  $("#camGammaVal").textContent = v.toFixed(2);
+});
+$("#camContrast").addEventListener("input", e=>{
+  const v = (+e.target.value)/100; // -1..1
+  colorGradePass.uniforms.uContrast.value = v;
+  $("#camContrastVal").textContent = e.target.value;
+});
+$("#camBrightness").addEventListener("input", e=>{
+  const v = (+e.target.value)/100; // -0.5..0.5
+  colorGradePass.uniforms.uBrightness.value = v;
+  $("#camBrightnessVal").textContent = e.target.value;
+});
+$("#camSaturation").addEventListener("input", e=>{
+  const v = (+e.target.value)/100; // -1..1
+  colorGradePass.uniforms.uSaturation.value = v;
+  $("#camSaturationVal").textContent = e.target.value;
+});
+$("#camWb").addEventListener("input", e=>{
+  const kelvin = +e.target.value;
+  $("#camWbVal").textContent = kelvin + "K";
+  // Beyaz dengesi = ışığın renk sıcaklığını "iptal eden" ters bir tint (basit ama etkili yaklaşım).
+  // 5500K nötr kabul edilir — ondan sapma bir renk çarpanı üretir.
+  const neutral = kelvinToRGB(5500);
+  const target = kelvinToRGB(kelvin);
+  colorGradePass.uniforms.uTint.value.set(neutral.r/target.r, neutral.g/target.g, neutral.b/target.b);
+});
+$("#btnCamImageReset").addEventListener("click", ()=>{
+  setExposure(1);
+  colorGradePass.uniforms.uGamma.value = 1; $("#camGamma").value = 100; $("#camGammaVal").textContent = "1.00";
+  colorGradePass.uniforms.uContrast.value = 0; $("#camContrast").value = 0; $("#camContrastVal").textContent = "0";
+  colorGradePass.uniforms.uBrightness.value = 0; $("#camBrightness").value = 0; $("#camBrightnessVal").textContent = "0";
+  colorGradePass.uniforms.uSaturation.value = 0; $("#camSaturation").value = 0; $("#camSaturationVal").textContent = "0";
+  colorGradePass.uniforms.uTint.value.set(1,1,1); $("#camWb").value = 5500; $("#camWbVal").textContent = "5500K";
+});
+
+function addItem(name, object3D, isSample){
+  const id = "m_" + Math.random().toString(36).slice(2,9);
+  const group = new THREE.Group();
+  group.add(object3D);
+
+  // otomatik normalize: zemine otur + makul boyuta getir
+  const box = new THREE.Box3().setFromObject(group);
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x,size.y,size.z, 0.0001);
+  const targetDim = 1.1;
+  const baseScale = isSample ? 1 : (targetDim / maxDim);
+  group.scale.setScalar(baseScale);
+
+  const box2 = new THREE.Box3().setFromObject(group);
+  group.position.y -= box2.min.y;
+
+  // Çoklu ürün kompozisyonu: sahnede zaten obje varsa üst üste binmesin diye X ekseninde
+  // otomatik aralıklandır (kullanıcı sonradan Taşı gizmosuyla / X-Y-Z alanlarıyla istediği yere alır).
+  if(items.length > 0){
+    group.position.x += items.length * 1.6;
+  }
+
+  const item = { id, name, group, baseScale, isSample: !!isSample, userScale: 1, visible: true, locked: false, groupTag: null };
+  items.push(item);
+  setActive(id);
+  renderItemList();
+  return item;
+}
+
+function setActive(id){
+  // Not: obje artık burada sahneden ÇIKARILMIYOR — çoklu ürün kompozisyonu için tüm item'lar
+  // sahnede eşzamanlı kalır, yalnızca "düzenleme odağı" (activeId) değişir. Sahneden çıkarma
+  // yalnızca removeItem()'da olur.
+  const prev = items.find(i=>i.id===activeId);
+  if(prev){
+    const prevMats = collectMaterials(prev.group);
+    if(wireOn) applyWireframe(prevMats, false);
+    if(uvOn) applyUVGrid(prevMats, false);
+    if(compareOn) applyCompareMode(prevMats, false);
+  }
+  activeId = id;
+  const item = items.find(i=>i.id===id);
+  if(!item) return;
+  resetViewToggles();
+  if(!item.group.parent) scene.add(item.group);
+  $("#vpEmpty").style.display = "none";
+  $("#ptName").textContent = item.isSample ? "Atlas Lounge Chair (örnek)" : item.name;
+  $("#ptSub").textContent = item.isSample ? "Yerleşik önizleme — kendi modelini içe aktarabilirsin" : "İçe aktarıldı";
+  $("#crumbName").textContent = item.isSample ? "Örnek Obje" : item.name;
+  $("#scaleRange").value = Math.round(item.userScale*100);
+  $("#scaleVal").textContent = item.userScale.toFixed(2)+"×";
+  $("#btnShot").disabled = false;
+  $("#btnExport").disabled = false;
+  $("#btnSaveModelLib").disabled = false;
+  renderItemList();
+  rebuildMaterialTab();
+  frameActive();
+  updateHud();
+  applyEnvIntensity();
+  attachGizmoToActive();
+  syncTransformFieldsFromActive();
+}
+
+function removeItem(id){
+  const idx = items.findIndex(i=>i.id===id);
+  if(idx<0) return;
+  const wasActive = activeId===id;
+  scene.remove(items[idx].group);
+  items.splice(idx,1);
+  if(wasActive){
+    if(items.length){ setActive(items[items.length-1].id); }
+    else{
+      activeId = null;
+      $("#vpEmpty").style.display = "flex";
+      $("#ptName").textContent = "—"; $("#ptSub").textContent = "Sahne boş";
+      $("#crumbName").textContent = "—";
+      $("#btnShot").disabled = true; $("#btnExport").disabled = true; $("#btnSaveModelLib").disabled = true;
+      $("#tab-material").innerHTML = '<div class="empty-tab">Malzeme göstermek için bir model içe aktar.</div>';
+      updateHud();
+      detachGizmo(); // silinen obje gizmo'ya bağlıydı, sahne artık boş — sarkan referansı temizle
+    }
+  }
+  renderItemList();
+}
+
+/* ---------------- Sahne Hiyerarşisi (sol panel) ----------------
+   Çoklu ürün kompozisyonu için: seç/gizle/kilitle/yeniden-adlandır/çoğalt/sil.
+   Kilitli objeler transformControls'a bağlanamaz (bkz. attachGizmoToActive). */
+const EYE_ICON = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF_ICON = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.9 5.1A11 11 0 0 1 23 12s-1.1 2-3.2 3.8M6.2 6.2C3.6 7.9 1 12 1 12s2.4 4.2 6.2 5.9"/></svg>`;
+const LOCK_ICON = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+const UNLOCK_ICON = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M7 11V7a5 5 0 0 1 9-3"/></svg>`;
+const COPY_ICON = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M4 16V4a2 2 0 0 1 2-2h10"/></svg>`;
+
+function renderItemList(){
+  const el = $("#itemList");
+  if(!items.length){ el.innerHTML = '<div class="empty-hint">Henüz içe aktarılmış model yok.</div>'; return; }
+  el.innerHTML = items.map((it,i)=>{
+    const name = it.isSample ? "Atlas Lounge Chair (örnek)" : it.name;
+    return `
+    <div class="scene-item ${it.id===activeId?'on':''} ${it.visible===false?'si-hidden':''}" data-id="${it.id}">
+      <div class="si-thumb" style="background:${badgeColor(i)}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 22V12"/></svg></div>
+      <div class="si-info">
+        <div class="n" data-name="${it.id}">${name}${it.groupTag ? ` <span class="si-tag">${it.groupTag}</span>` : ""}</div>
+        <div class="m">${it.isSample?'Yerleşik':'İçe aktarıldı'}${it.locked?' · Kilitli':''}</div>
+      </div>
+      <div class="si-actions">
+        <button class="si-icon ${it.visible===false?'active':''}" data-vis="${it.id}" title="${it.visible===false?'Göster':'Gizle'}">${it.visible===false?EYE_OFF_ICON:EYE_ICON}</button>
+        <button class="si-icon ${it.locked?'active':''}" data-lock="${it.id}" title="${it.locked?'Kilidi Aç':'Kilitle'}">${it.locked?LOCK_ICON:UNLOCK_ICON}</button>
+        <button class="si-icon" data-dup="${it.id}" title="Çoğalt">${COPY_ICON}</button>
+        <button class="si-icon si-del" data-del="${it.id}" title="Kaldır"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
+      </div>
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".scene-item").forEach(row=>{
+    row.addEventListener("click", e=>{ if(e.target.closest("[data-del],[data-vis],[data-lock],[data-dup],[data-name]")) return; setActive(row.dataset.id); });
+  });
+  el.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.addEventListener("click", e=>{ e.stopPropagation(); removeItem(btn.dataset.del); });
+  });
+  el.querySelectorAll("[data-vis]").forEach(btn=>{
+    btn.addEventListener("click", e=>{
+      e.stopPropagation();
+      const it = items.find(i=>i.id===btn.dataset.vis);
+      if(!it) return;
+      it.visible = it.visible===false ? true : false;
+      it.group.visible = it.visible;
+      renderItemList();
+    });
+  });
+  el.querySelectorAll("[data-lock]").forEach(btn=>{
+    btn.addEventListener("click", e=>{
+      e.stopPropagation();
+      const it = items.find(i=>i.id===btn.dataset.lock);
+      if(!it) return;
+      it.locked = !it.locked;
+      if(it.locked && it.id===activeId && typeof detachGizmo === "function") detachGizmo();
+      renderItemList();
+    });
+  });
+  el.querySelectorAll("[data-dup]").forEach(btn=>{
+    btn.addEventListener("click", e=>{ e.stopPropagation(); duplicateItem(btn.dataset.dup); });
+  });
+  el.querySelectorAll("[data-name]").forEach(nameEl=>{
+    nameEl.addEventListener("dblclick", e=>{ e.stopPropagation(); startRenameItem(nameEl, nameEl.closest(".scene-item").dataset.id); });
+  });
+}
+
+function duplicateItem(id){
+  const src = items.find(i=>i.id===id);
+  if(!src) return;
+  const newId = "m_" + Math.random().toString(36).slice(2,9);
+  const group = src.group.clone(true);
+  group.position.x += 1.6;
+  // Materyalleri de klonla — aksi halde kopya orijinalle AYNI malzeme nesnesini paylaşır,
+  // birini düzenlemek diğerini de değiştirir. Geometri paylaşımı sorun değil (salt-okunur).
+  const matMap = new Map();
+  group.traverse(o=>{
+    if(o.isMesh){
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      const cloned = mats.map(m=>{
+        if(!m) return m;
+        if(!matMap.has(m.uuid)){
+          const c = m.clone();
+          c.userData = {
+            __params: JSON.parse(JSON.stringify(m.userData.__params || {})),
+            __sizing: m.userData.__sizing ? JSON.parse(JSON.stringify(m.userData.__sizing)) : null,
+            __orig: m.userData.__orig || {}, // kaynak görsel/canvas referansları paylaşılır (salt-okunur)
+          };
+          matMap.set(m.uuid, c);
+        }
+        return matMap.get(m.uuid);
+      });
+      o.material = Array.isArray(o.material) ? cloned : cloned[0];
+    }
+  });
+  const item = { id:newId, name:(src.isSample?"Atlas Lounge Chair":src.name)+" (kopya)", group, baseScale:src.baseScale, isSample:false, userScale:src.userScale, visible:true, locked:false, groupTag:src.groupTag };
+  items.push(item);
+  setActive(newId);
+  renderItemList();
+  toast("Obje çoğaltıldı.");
+}
+
+function startRenameItem(nameEl, id){
+  const it = items.find(i=>i.id===id);
+  if(!it) return;
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "si-rename-input";
+  input.value = it.isSample ? "Atlas Lounge Chair (örnek)" : it.name;
+  nameEl.replaceWith(input);
+  input.focus();
+  input.select();
+  const commit = () => {
+    const val = input.value.trim();
+    if(val){ it.name = val; it.isSample = false; }
+    renderItemList();
+    if(it.id === activeId){ $("#ptName").textContent = it.name; $("#crumbName").textContent = it.name; }
+  };
+  input.addEventListener("blur", commit);
+  input.addEventListener("keydown", e=>{
+    if(e.key === "Enter") input.blur();
+    if(e.key === "Escape"){ input.value = it.name; input.blur(); }
+  });
+}
+
+/* ================= Transform Gizmo (Taşı/Döndür/Ölçekle) ================= */
+let gizmoMode = null; // null | "translate" | "rotate" | "scale"
+let snapOn = false;
+
+function applySnapSettings(){
+  transformControls.setTranslationSnap(snapOn ? 0.1 : null);
+  transformControls.setRotationSnap(snapOn ? THREE.MathUtils.degToRad(15) : null);
+  transformControls.setScaleSnap(snapOn ? 0.1 : null);
+}
+function updateGizmoButtonsUI(){
+  $("#gizmoMove").classList.toggle("on", gizmoMode === "translate");
+  $("#gizmoRotate").classList.toggle("on", gizmoMode === "rotate");
+  $("#gizmoScale").classList.toggle("on", gizmoMode === "scale");
+}
+function attachGizmoToActive(){
+  if(!gizmoMode){ transformControls.detach(); return; }
+  const item = items.find(i=>i.id===activeId);
+  if(!item || item.locked){ transformControls.detach(); return; }
+  transformControls.camera = camera;
+  transformControls.attach(item.group);
+  transformControls.setMode(gizmoMode);
+}
+function detachGizmo(){
+  gizmoMode = null;
+  transformControls.detach();
+  updateGizmoButtonsUI();
+}
+function setGizmoMode(mode){
+  const item = items.find(i=>i.id===activeId);
+  if(!item){ toast("Önce bir obje seç.", true); return; }
+  if(item.locked){ toast("Bu obje kilitli — önce kilidi aç.", true); return; }
+  gizmoMode = mode;
+  attachGizmoToActive();
+  updateGizmoButtonsUI();
+}
+function toggleGizmoMode(mode){
+  if(gizmoMode === mode) detachGizmo(); else setGizmoMode(mode);
+}
+function syncTransformFieldsFromActive(){
+  const item = items.find(i=>i.id===activeId);
+  if(!item) return;
+  $("#objPosX").value = item.group.position.x.toFixed(2);
+  $("#objPosY").value = item.group.position.y.toFixed(2);
+  $("#objPosZ").value = item.group.position.z.toFixed(2);
+  $("#objRotX").value = THREE.MathUtils.radToDeg(item.group.rotation.x).toFixed(1);
+  $("#objRotY").value = THREE.MathUtils.radToDeg(item.group.rotation.y).toFixed(1);
+  $("#objRotZ").value = THREE.MathUtils.radToDeg(item.group.rotation.z).toFixed(1);
+}
+
+$("#gizmoMove").addEventListener("click", ()=> toggleGizmoMode("translate"));
+$("#gizmoRotate").addEventListener("click", ()=> toggleGizmoMode("rotate"));
+$("#gizmoScale").addEventListener("click", ()=> toggleGizmoMode("scale"));
+$("#gizmoSnap").addEventListener("change", e=>{ snapOn = e.target.checked; applySnapSettings(); });
+
+// W/E/R kısayolları — yazı alanlarında (input/textarea/select) tetiklenmesin diye korunuyor.
+document.addEventListener("keydown", e=>{
+  const tag = document.activeElement?.tagName;
+  if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  if(e.metaKey || e.ctrlKey || e.altKey) return;
+  if(e.key === "w" || e.key === "W") setGizmoMode("translate");
+  else if(e.key === "e" || e.key === "E") setGizmoMode("rotate");
+  else if(e.key === "r" || e.key === "R") setGizmoMode("scale");
+  else if(e.key === "Escape") detachGizmo();
+});
+
+["objPosX","objPosY","objPosZ"].forEach(id=>{
+  $("#"+id).addEventListener("input", ()=>{
+    const item = items.find(i=>i.id===activeId); if(!item) return;
+    item.group.position.set(+$("#objPosX").value||0, +$("#objPosY").value||0, +$("#objPosZ").value||0);
+  });
+});
+["objRotX","objRotY","objRotZ"].forEach(id=>{
+  $("#"+id).addEventListener("input", ()=>{
+    const item = items.find(i=>i.id===activeId); if(!item) return;
+    item.group.rotation.set(
+      THREE.MathUtils.degToRad(+$("#objRotX").value||0),
+      THREE.MathUtils.degToRad(+$("#objRotY").value||0),
+      THREE.MathUtils.degToRad(+$("#objRotZ").value||0)
+    );
+  });
+});
+
+function updateHud(){
+  const item = items.find(i=>i.id===activeId);
+  if(!item){ $("#hudMesh").textContent = "Mesh: 0 · Malzeme: 0"; return; }
+  let meshCount=0; const mats = new Set();
+  item.group.traverse(o=>{ if(o.isMesh){ meshCount++; (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m&&mats.add(m.uuid)); } });
+  $("#hudMesh").textContent = `Mesh: ${meshCount} · Malzeme: ${mats.size}`;
+}
+
+/* ---------------- içe aktarma ---------------- */
+function importFile(file){
+  const ext = file.name.split(".").pop().toLowerCase();
+  if(!["glb","gltf","obj"].includes(ext)){
+    toast("Desteklenmeyen format: ." + ext + " — .glb, .gltf ya da .obj kullan.", true);
+    return;
+  }
+  toast("Yükleniyor: " + file.name + " …");
+  const reader = new FileReader();
+  reader.onerror = () => toast("Dosya okunamadı.", true);
+  reader.onload = () => {
+    try{
+      if(ext === "obj"){
+        const text = new TextDecoder().decode(reader.result);
+        const obj = objLoader.parse(text);
+        addItem(file.name, obj, false);
+        toast("İçe aktarıldı: " + file.name);
+      } else {
+        gltfLoader.parse(reader.result, "", (gltf)=>{
+          addItem(file.name, gltf.scene, false);
+          toast("İçe aktarıldı: " + file.name);
+        }, (err)=>{ toast("Yükleme hatası: " + (err?.message||err), true); });
+      }
+    }catch(err){ toast("Yükleme hatası: " + err.message, true); console.error(err); }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+$("#fileInput").addEventListener("change", e=>{ if(e.target.files[0]) importFile(e.target.files[0]); e.target.value=""; });
+$("#importDrop").addEventListener("click", ()=> $("#fileInput").click());
+
+const dropZone = $("#stageWrap");
+["dragenter","dragover"].forEach(ev=>dropZone.addEventListener(ev, e=>{ e.preventDefault(); dropZone.classList.add("drag-over"); }));
+["dragleave","drop"].forEach(ev=>dropZone.addEventListener(ev, e=>{ e.preventDefault(); dropZone.classList.remove("drag-over"); }));
+dropZone.addEventListener("drop", e=>{
+  const payload = e.dataTransfer.getData("application/x-cs-item");
+  if(payload){ handleLibraryDropPayload(payload); return; }
+  const f=e.dataTransfer.files[0]; if(f) importFile(f);
+});
+$("#importDrop").addEventListener("dragover", e=>e.preventDefault());
+$("#importDrop").addEventListener("drop", e=>{ e.preventDefault(); e.stopPropagation(); const f=e.dataTransfer.files[0]; if(f) importFile(f); });
+
+/* ---------------- Malzeme sekmesi ---------------- */
+/* PBR doku kanalları — Substance Painter / glTF metallic-roughness ile
+   birebir uyumlu 6 standart harita. "srgb" renk verisi taşıyan (Base
+   Color, Emissive), diğerleri ham veri taşıyan (Normal/Roughness/
+   Metalness/AO) haritalardır — colorSpace buna göre ayarlanır. */
+const TEX_SLOTS = [
+  { key:"map",          label:"Base Color",  icon:"🖼", srgb:true },
+  { key:"normalMap",    label:"Normal",      icon:"⛰", srgb:false },
+  { key:"roughnessMap", label:"Roughness",   icon:"◐", srgb:false },
+  { key:"metalnessMap", label:"Metalness",   icon:"◆", srgb:false },
+  { key:"aoMap",        label:"Occlusion",   icon:"◔", srgb:false, needsUV2:true },
+  { key:"displacementMap", label:"Height",   icon:"🏔", srgb:false },
+  { key:"emissiveMap",  label:"Emissive",    icon:"✦", srgb:true,  isEmissive:true },
+];
+
+/* ---- malzeme başına saklanan durum: orijinal görseller / ayar parametreleri / ölçü-tiling ---- */
+function ensureUserData(mat){
+  const u = mat.userData;
+  if(!u.__orig) u.__orig = {};        // slotKey -> orijinal (işlenmemiş) Image/Canvas — ayarlar hep bundan yeniden üretilir
+  if(!u.__params) u.__params = {};    // slotKey -> ADJUST_SCHEMA değerleri
+  if(!u.__sizing) u.__sizing = { width:100, height:100, unit:"cm", tilingX:1, tilingY:1, rotation:0, offsetX:0, offsetY:0, overrides:{} };
+  return u;
+}
+
+function applySizing(mat, slotKey){
+  const tex = mat[slotKey];
+  if(!tex) return;
+  const sizing = mat.userData.__sizing;
+  const v = sizing.overrides[slotKey] || sizing;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.center.set(0.5, 0.5);
+  tex.repeat.set(v.tilingX, v.tilingY);
+  tex.rotation = THREE.MathUtils.degToRad(v.rotation || 0);
+  tex.offset.set(v.offsetX || 0, v.offsetY || 0);
+  tex.needsUpdate = true;
+}
+
+const UNIT_TO_CM = { mm:0.1, cm:1, m:100, inch:2.54 };
+// Genişlik/Yükseklik alanları eskiden yalnızca bilgi amaçlıydı — tilingX/Y'yi HİÇ etkilemiyordu,
+// bu yüzden kullanıcı ölçü girdiğinde görsel olarak hiçbir şey değişmiyordu. Artık 1 sahne birimi
+// ≈ 1 metre kabul edilerek aktif objenin GERÇEK (ölçeklenmiş) sınır kutusu referans alınıyor ve
+// dokunun tanımlı fiziksel boyutuna bölünerek tiling doğrudan hesaplanıyor.
+function computeAutoTiling(v){
+  const item = items.find(i=>i.id===activeId);
+  if(!item) return null;
+  const box = new THREE.Box3().setFromObject(item.group);
+  if(box.isEmpty()) return null;
+  const size = box.getSize(new THREE.Vector3());
+  const objWidthCm = Math.max(size.x, size.z) * 100;
+  const objHeightCm = Math.max(size.y, 0.001) * 100;
+  const unitCm = UNIT_TO_CM[v.unit] || 1;
+  const texWidthCm = Math.max(0.001, (v.width || 0)) * unitCm;
+  const texHeightCm = Math.max(0.001, (v.height || 0)) * unitCm;
+  return {
+    tilingX: Math.max(0.01, objWidthCm / texWidthCm),
+    tilingY: Math.max(0.01, objHeightCm / texHeightCm),
+  };
+}
+
+/* ---- harita başına şiddet/yoğunluk ayar formu (ADJUST_SCHEMA'dan otomatik üretilir) ---- */
+function slotAdjustHTML(slotKey, params){
+  const schema = ADJUST_SCHEMA[slotKey];
+  if(!schema) return "";
+  return schema.map(f=>{
+    if(f.type==="bool"){
+      return `<label class="adj-row adj-bool"><span>${f.label}</span><input type="checkbox" data-adj="${f.key}" ${params[f.key]?'checked':''}></label>`;
+    }
+    if(f.type==="color"){
+      return `<label class="adj-row adj-color"><span>${f.label}</span><input type="color" data-adj="${f.key}" value="${params[f.key]}"></label>`;
+    }
+    if(f.type==="enum"){
+      return `<label class="adj-row"><span>${f.label}</span><select data-adj="${f.key}">${f.options.map(o=>`<option value="${o}" ${params[f.key]===o?'selected':''}>${o}</option>`).join("")}</select></label>`;
+    }
+    const val = params[f.key];
+    return `<label class="adj-row"><span>${f.label} <b data-adjval="${f.key}">${val}${f.unit||""}</b></span><input type="range" data-adj="${f.key}" min="${f.min}" max="${f.max}" step="${f.step}" value="${val}"></label>`;
+  }).join("");
+}
+
+function slotSizingHTML(mat, slot){
+  const sizing = mat.userData.__sizing;
+  const isBase = slot.key === "map";
+  const ov = sizing.overrides[slot.key];
+  const on = !!ov;
+  const v = isBase ? sizing : (ov || sizing);
+  return `
+    <div class="adj-sub-head">Gerçek Ölçü &amp; Tiling</div>
+    ${isBase ? "" : `<label class="adj-row adj-bool"><span>Base Color ölçüsünden bağımsız</span><input type="checkbox" data-sizeov="${slot.key}" ${on?'checked':''}></label>`}
+    <div class="size-grid" data-sizegrid="${slot.key}" style="${(!isBase && !on) ? 'opacity:.45;pointer-events:none' : ''}">
+      <label>Genişlik<input type="number" data-size="width" value="${v.width}" step="0.1"></label>
+      <label>Yükseklik<input type="number" data-size="height" value="${v.height}" step="0.1"></label>
+      <label>Birim<select data-size="unit">${["mm","cm","m","inch"].map(u=>`<option ${v.unit===u?'selected':''}>${u}</option>`).join("")}</select></label>
+      <label>Tiling X<input type="number" data-size="tilingX" value="${v.tilingX}" step="0.1"></label>
+      <label>Tiling Y<input type="number" data-size="tilingY" value="${v.tilingY}" step="0.1"></label>
+      <label>Döndürme° <input type="number" data-size="rotation" value="${v.rotation}" step="1"></label>
+      <label>Offset X<input type="number" data-size="offsetX" value="${v.offsetX}" step="0.05"></label>
+      <label>Offset Y<input type="number" data-size="offsetY" value="${v.offsetY}" step="0.05"></label>
+    </div>
+    <div class="tex-hint">Genişlik/Yükseklik değiştirdiğinde Tiling X/Y otomatik hesaplanır (1 sahne birimi ≈ 1 metre kabul edilerek objenin gerçek boyutuna bölünür). Tiling'i doğrudan da elle ayarlayabilirsin.${isBase ? ' Bu değerler, "bağımsız" işaretlenmemiş diğer tüm haritalara otomatik uygulanır.' : ''}</div>
+  `;
+}
+
+function autoPbrHTML(mat){
+  const hasBase = !!mat.userData.__orig["map"];
+  const opts = Object.entries(SURFACE_PRESETS).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join("");
+  if(!hasBase){
+    return `<div class="autopbr-box"><div class="slot-head">Auto PBR</div><div class="tex-hint">Önce Base Color yükle — Auto PBR ondan Roughness/Normal/Height/AO/Metallic üretir (prosedürel, tahmini).</div></div>`;
+  }
+  return `
+    <div class="autopbr-box">
+      <div class="slot-head">Auto PBR <span style="font-weight:400;text-transform:none;letter-spacing:0">— prosedürel, tahmini</span></div>
+      <div class="field"><label>Yüzey Tipi</label><select data-ap="surfaceType">${opts}</select></div>
+      <div class="field"><label>Çözünürlük</label><select data-ap="resolution">
+        <option value="512">512</option><option value="1024" selected>1K</option><option value="2048">2K</option><option value="4096">4K</option><option value="8192">8K</option>
+      </select></div>
+      <div class="field"><label>Detay Seviyesi <b data-apval="detail">60%</b></label><input type="range" data-ap="detail" min="0" max="100" value="60"></div>
+      <div class="field"><label>Normal Şiddeti <b data-apval="normalStrength">100%</b></label><input type="range" data-ap="normalStrength" min="0" max="200" value="100"></div>
+      <div class="field"><label>Roughness Şiddeti <b data-apval="roughnessStrength">100%</b></label><input type="range" data-ap="roughnessStrength" min="0" max="200" value="100"></div>
+      <div class="field"><label>AO Şiddeti <b data-apval="aoStrength">100%</b></label><input type="range" data-ap="aoStrength" min="0" max="200" value="100"></div>
+      <div class="field"><label>Metallic Eşiği <b data-apval="metallicThreshold">72%</b></label><input type="range" data-ap="metallicThreshold" min="0" max="100" value="72"></div>
+      <label class="adj-row adj-bool"><span>Kenar Düzeltme (seamless yardımcı)</span><input type="checkbox" data-ap="edgeFix"></label>
+      <button class="btn primary" data-apgen style="width:100%;justify-content:center;margin-top:8px">🪄 Auto PBR Oluştur</button>
+      <div class="ap-progress" data-approgress style="display:none">
+        <div class="ap-bar"><div class="ap-fill" data-apfill></div></div>
+        <div class="ap-label" data-aplabel>Hazırlanıyor…</div>
+      </div>
+    </div>`;
+}
+
+function rebuildMaterialTab(){
+  const item = items.find(i=>i.id===activeId);
+  const el = $("#tab-material");
+  if(!item){ el.innerHTML = '<div class="empty-tab">Malzeme göstermek için bir model içe aktar.</div>'; return; }
+  const mats = collectMaterials(item.group);
+  if(!mats.length){ el.innerHTML = '<div class="empty-tab">Bu modelde düzenlenebilir malzeme bulunamadı.</div>'; return; }
+  mats.forEach(ensureUserData);
+
+  el.innerHTML = mats.map((m,i)=>`
+    <div class="mat-card" data-uuid="${m.uuid}">
+      <div class="mh">
+        <div class="mat-swatch"><input type="color" data-role="color" value="${'#'+m.color.getHexString()}"></div>
+        <div class="mat-name">${m.name || ("Malzeme " + (i+1))}</div>
+        <button class="icon-btn" data-savelib title="Materyal Kütüphanesine kaydet" style="flex:0 0 auto">💾</button>
+      </div>
+      <div class="field">
+        <label>Pürüzlülük (Roughness) <b data-role="roughVal">${m.roughness.toFixed(2)}</b></label>
+        <input type="range" data-role="roughness" min="0" max="100" value="${Math.round(m.roughness*100)}">
+      </div>
+      <div class="field">
+        <label>Metaliklik (Metalness) <b data-role="metalVal">${m.metalness.toFixed(2)}</b></label>
+        <input type="range" data-role="metalness" min="0" max="100" value="${Math.round(m.metalness*100)}">
+      </div>
+      <div class="tex-grid">
+        ${TEX_SLOTS.map(s=>`<button class="tex-btn ${m[s.key]?'has':''}" data-key="${s.key}">${s.icon} ${s.label}${m[s.key]?' ✓':''}</button>`).join("")}
+      </div>
+      <div class="tex-hint">Her harita PBR kanalına uygun renk uzayıyla (sRGB / Linear) otomatik yüklenir.</div>
+      ${TEX_SLOTS.map(s=>`<input type="file" accept="image/*" data-input="${s.key}" style="display:none">`).join("")}
+
+      ${TEX_SLOTS.filter(s=>m[s.key]).map(s=>`
+        <div class="adj-panel">
+          <button class="adj-toggle" data-adjtoggle="${s.key}">${s.icon} ${s.label} — Ayarlar &amp; Ölçü ▾</button>
+          <div class="adj-body" data-adjbody="${s.key}" style="display:none">
+            <div class="adj-grid" data-adjbox="${s.key}">${slotAdjustHTML(s.key, m.userData.__params[s.key] || (m.userData.__params[s.key]=defaultParams(s.key)))}</div>
+            ${ADJUST_SCHEMA[s.key] ? `<button class="btn" data-adjresetkey="${s.key}" style="width:100%;justify-content:center;margin:8px 0">↺ Varsayılana Sıfırla</button>` : ""}
+            <div class="size-box" data-sizebox="${s.key}">${slotSizingHTML(m, s)}</div>
+          </div>
+        </div>`).join("")}
+
+      ${autoPbrHTML(m)}
+    </div>`).join("");
+
+  el.querySelectorAll(".mat-card").forEach(card=>{
+    const uuid = card.dataset.uuid;
+    const mat = mats.find(m=>m.uuid===uuid);
+    card.querySelector('[data-role="color"]').addEventListener("input", e=>{ mat.color.set(e.target.value); });
+    card.querySelector("[data-savelib]").addEventListener("click", ()=> saveMaterialToLibrary(mat));
+    // Materyal Kütüphanesi kartını doğrudan bu malzeme kartının üstüne sürükleyip bırakınca
+    // yalnızca bu malzemeye uygulanır (viewport'a bırakmak ilk malzemeye uygular).
+    card.addEventListener("dragover", e=>{ e.preventDefault(); card.classList.add("drag-over-mat"); });
+    card.addEventListener("dragleave", ()=> card.classList.remove("drag-over-mat"));
+    card.addEventListener("drop", e=>{
+      e.preventDefault(); e.stopPropagation();
+      card.classList.remove("drag-over-mat");
+      const payload = e.dataTransfer.getData("application/x-cs-item");
+      if(payload) handleLibraryDropPayload(payload, uuid);
+    });
+    const rough = card.querySelector('[data-role="roughness"]');
+    rough.addEventListener("input", e=>{ mat.roughness = (+e.target.value)/100; card.querySelector('[data-role="roughVal"]').textContent = mat.roughness.toFixed(2); });
+    const metal = card.querySelector('[data-role="metalness"]');
+    metal.addEventListener("input", e=>{ mat.metalness = (+e.target.value)/100; card.querySelector('[data-role="metalVal"]').textContent = mat.metalness.toFixed(2); });
+
+    TEX_SLOTS.forEach(slot=>{
+      const btn = card.querySelector(`[data-key="${slot.key}"]`);
+      const input = card.querySelector(`[data-input="${slot.key}"]`);
+      btn.addEventListener("click", ()=>input.click());
+      input.addEventListener("change", e=>{
+        const f = e.target.files[0]; if(!f) return;
+        const url = URL.createObjectURL(f);
+        new THREE.TextureLoader().load(url, tex=>{
+          disableViewTogglesForActive();
+          tex.colorSpace = slot.srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+          mat[slot.key] = tex;
+          mat.userData.__orig[slot.key] = tex.image;
+          mat.userData.__params[slot.key] = defaultParams(slot.key);
+          applySizing(mat, slot.key);
+          if(slot.key==="normalMap") applyNormalMaterialParams(mat, mat.userData.__params[slot.key]);
+          if(slot.key==="displacementMap") applyHeightMaterialParams(mat, mat.userData.__params[slot.key]);
+          if(slot.needsUV2){
+            // AO haritası ikinci UV kanalı ister; çoğu içe aktarılan modelde
+            // yoktur — yoksa birincil UV'yi kopyalayıp yine de çalışmasını sağla.
+            item.group.traverse(o=>{
+              if(o.isMesh && o.geometry?.attributes?.uv && !o.geometry.attributes.uv2){
+                o.geometry.setAttribute("uv2", o.geometry.attributes.uv);
+              }
+            });
+          }
+          if(slot.isEmissive){
+            if(mat.emissive.getHex() === 0x000000) mat.emissive.set(0xffffff);
+            if(!mat.emissiveIntensity) mat.emissiveIntensity = 1;
+          }
+          mat.needsUpdate = true;
+          toast(slot.label + " uygulandı: " + f.name);
+          rebuildMaterialTab();
+        });
+      });
+    });
+
+    card.querySelectorAll("[data-adjtoggle]").forEach(t=>{
+      t.addEventListener("click", ()=>{
+        const key = t.dataset.adjtoggle;
+        const body = card.querySelector(`[data-adjbody="${key}"]`);
+        const wasOpen = body.style.display !== "none";
+        body.style.display = wasOpen ? "none" : "block";
+        t.textContent = t.textContent.replace(wasOpen ? "▲" : "▾", wasOpen ? "▾" : "▲");
+      });
+    });
+
+    card.querySelectorAll("[data-adjresetkey]").forEach(b=>{
+      b.addEventListener("click", ()=>{
+        const key = b.dataset.adjresetkey;
+        const slot = TEX_SLOTS.find(s=>s.key===key);
+        mat.userData.__params[key] = defaultParams(key);
+        if(key==="normalMap") applyNormalMaterialParams(mat, mat.userData.__params[key]);
+        else if(key==="displacementMap") applyHeightMaterialParams(mat, mat.userData.__params[key]);
+        reprocessSlot(mat, slot);
+        rebuildMaterialTab();
+      });
+    });
+
+    TEX_SLOTS.filter(s=>mat[s.key]).forEach(slot=>{
+      wireSlotAdjust(card, mat, slot);
+      wireSlotSizing(card, mat, slot);
+    });
+    wireAutoPbr(card, mat, item);
+  });
+}
+
+function reprocessSlot(mat, slot){
+  if(!slot) return;
+  const orig = mat.userData.__orig[slot.key];
+  if(!orig) return;
+  const params = mat.userData.__params[slot.key];
+  const canvas = applyAdjust(slot.key, orig, params);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = slot.srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  const prev = mat[slot.key];
+  mat[slot.key] = tex;
+  applySizing(mat, slot.key);
+  mat.needsUpdate = true;
+  if(prev && prev !== tex && prev.dispose) prev.dispose();
+}
+
+function wireSlotAdjust(card, mat, slot){
+  const box = card.querySelector(`[data-adjbox="${slot.key}"]`);
+  if(!box) return;
+  const params = mat.userData.__params[slot.key];
+  const schedule = debounce(()=>reprocessSlot(mat, slot), 90);
+  box.querySelectorAll("[data-adj]").forEach(inp=>{
+    const key = inp.dataset.adj;
+    const field = ADJUST_SCHEMA[slot.key].find(f=>f.key===key);
+    inp.addEventListener("input", ()=>{
+      const v = inp.type==="checkbox" ? inp.checked : (inp.type==="range" ? +inp.value : inp.value);
+      params[key] = v;
+      const label = box.querySelector(`[data-adjval="${key}"]`);
+      if(label) label.textContent = v + (field.unit||"");
+      if(slot.key==="normalMap") applyNormalMaterialParams(mat, params);
+      else if(slot.key==="displacementMap" && (key==="amount"||key==="midLevel")) applyHeightMaterialParams(mat, params);
+      else schedule();
+    });
+  });
+}
+
+function wireSlotSizing(card, mat, slot){
+  const wrap = card.querySelector(`[data-sizebox="${slot.key}"]`);
+  if(!wrap) return;
+  const sizing = mat.userData.__sizing;
+  const isBase = slot.key === "map";
+  if(!isBase){
+    const cb = wrap.querySelector("[data-sizeov]");
+    cb.addEventListener("change", ()=>{
+      if(cb.checked){ sizing.overrides[slot.key] = { width:sizing.width, height:sizing.height, unit:sizing.unit, tilingX:sizing.tilingX, tilingY:sizing.tilingY, rotation:sizing.rotation, offsetX:sizing.offsetX, offsetY:sizing.offsetY }; }
+      else{ delete sizing.overrides[slot.key]; }
+      applySizing(mat, slot.key);
+      rebuildMaterialTab();
+    });
+  }
+  wrap.querySelectorAll("[data-size]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const key = inp.dataset.size;
+      const numeric = inp.tagName === "INPUT" && inp.type === "number";
+      const val = numeric ? +inp.value : inp.value;
+      const target = isBase ? sizing : (sizing.overrides[slot.key] || (sizing.overrides[slot.key] = { width:sizing.width, height:sizing.height, unit:sizing.unit, tilingX:sizing.tilingX, tilingY:sizing.tilingY, rotation:sizing.rotation, offsetX:sizing.offsetX, offsetY:sizing.offsetY }));
+      target[key] = val;
+
+      // Fiziksel ölçü değişince tiling'i doğrudan yeniden hesapla — eskiden bu iki alan
+      // birbirinden kopuktu ve Genişlik/Yükseklik girmek görsel olarak hiçbir şey yapmıyordu.
+      if(key==="width" || key==="height" || key==="unit"){
+        const auto = computeAutoTiling(target);
+        if(auto){
+          target.tilingX = +auto.tilingX.toFixed(3);
+          target.tilingY = +auto.tilingY.toFixed(3);
+          const tX = wrap.querySelector('[data-size="tilingX"]');
+          const tY = wrap.querySelector('[data-size="tilingY"]');
+          if(tX) tX.value = target.tilingX;
+          if(tY) tY.value = target.tilingY;
+        }
+      }
+
+      if(isBase){
+        TEX_SLOTS.forEach(s=>{ if(!sizing.overrides[s.key] && mat[s.key]) applySizing(mat, s.key); });
+      }else{
+        applySizing(mat, slot.key);
+      }
+    });
+  });
+}
+
+function wireAutoPbr(card, mat, item){
+  const genBtn = card.querySelector("[data-apgen]");
+  if(!genBtn) return;
+  card.querySelectorAll('[data-ap][type="range"]').forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const lbl = card.querySelector(`[data-apval="${inp.dataset.ap}"]`);
+      if(lbl) lbl.textContent = inp.value + "%";
+    });
+  });
+  genBtn.addEventListener("click", async ()=>{
+    const opts = {
+      surfaceType: card.querySelector('[data-ap="surfaceType"]').value,
+      resolution: +card.querySelector('[data-ap="resolution"]').value,
+      detail: (+card.querySelector('[data-ap="detail"]').value)/100,
+      normalStrength: (+card.querySelector('[data-ap="normalStrength"]').value)/100,
+      roughnessStrength: (+card.querySelector('[data-ap="roughnessStrength"]').value)/100,
+      aoStrength: (+card.querySelector('[data-ap="aoStrength"]').value)/100,
+      metallicThreshold: (+card.querySelector('[data-ap="metallicThreshold"]').value)/100,
+      edgeFix: card.querySelector('[data-ap="edgeFix"]').checked,
+    };
+    const progressBox = card.querySelector("[data-approgress]");
+    const fill = card.querySelector("[data-apfill]");
+    const label = card.querySelector("[data-aplabel]");
+    progressBox.style.display = "block";
+    genBtn.disabled = true;
+    disableViewTogglesForActive();
+    try{
+      const result = await generateAutoPBR(mat.userData.__orig["map"], {
+        ...opts,
+        onProgress: (pct, txt)=>{ fill.style.width = pct+"%"; label.textContent = txt; }
+      });
+      const produced = { roughnessMap: result.roughness, normalMap: result.normal, displacementMap: result.height, aoMap: result.ao, metalnessMap: result.metallic };
+      Object.entries(produced).forEach(([key, canvas])=>{
+        const slot = TEX_SLOTS.find(s=>s.key===key);
+        mat.userData.__orig[key] = canvas;
+        mat.userData.__params[key] = defaultParams(key);
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.colorSpace = slot.srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+        mat[key] = tex;
+        applySizing(mat, key);
+        if(key==="normalMap") applyNormalMaterialParams(mat, mat.userData.__params[key]);
+        if(key==="displacementMap") applyHeightMaterialParams(mat, mat.userData.__params[key]);
+        if(key==="aoMap"){
+          item.group.traverse(o=>{
+            if(o.isMesh && o.geometry?.attributes?.uv && !o.geometry.attributes.uv2){
+              o.geometry.setAttribute("uv2", o.geometry.attributes.uv);
+            }
+          });
+        }
+      });
+      mat.needsUpdate = true;
+      toast("Auto PBR haritaları oluşturuldu (prosedürel/tahmini).");
+      rebuildMaterialTab();
+    }catch(err){
+      toast("Auto PBR hatası: " + err.message, true);
+      console.error(err);
+    }finally{
+      genBtn.disabled = false;
+    }
+  });
+}
+
+/* ---------------- Kütüphaneye kaydet (Materyal + Model) ----------------
+   Materyal/Model Kütüphanesi (04_KUTUPHANE) ile aynı origin'den servis edildiği
+   için aynı IndexedDB veritabanını paylaşır — burada üretilen kayıt oradaki
+   kart listesinde doğrudan görünür. Bkz. 04_KUTUPHANE/js/db.js. */
+function textureToBlob(tex){
+  return new Promise((resolve, reject)=>{
+    const img = tex?.image;
+    if(!img){ resolve(null); return; }
+    if(img instanceof HTMLCanvasElement){ img.toBlob(b=>resolve(b), "image/png"); return; }
+    try{
+      const c = document.createElement("canvas");
+      c.width = img.naturalWidth || img.width; c.height = img.naturalHeight || img.height;
+      c.getContext("2d").drawImage(img, 0, 0);
+      c.toBlob(b=>resolve(b), "image/png");
+    }catch(err){ reject(err); }
+  });
+}
+
+async function saveMaterialToLibrary(mat){
+  const name = prompt("Materyal Kütüphanesine kaydedilecek ad:", mat.name || "Materyal");
+  if(!name) return;
+  try{
+    const rec = blankMaterial();
+    rec.name = name;
+    rec.color = "#" + mat.color.getHexString();
+    rec.roughness = mat.roughness; rec.metalness = mat.metalness;
+    rec.params = JSON.parse(JSON.stringify(mat.userData.__params || {}));
+    rec.sizing = JSON.parse(JSON.stringify(mat.userData.__sizing || {}));
+    for(const slot of TEX_SLOTS){
+      if(mat[slot.key]){ rec.maps[slot.key] = await textureToBlob(mat[slot.key]); }
+    }
+    await dbPut("materials", rec);
+    toast("Materyal Kütüphanesine kaydedildi: " + name);
+  }catch(err){
+    toast("Kaydetme hatası: " + err.message, true);
+    console.error(err);
+  }
+}
+
+function countGeometry(object3D){
+  let verts = 0, tris = 0;
+  object3D.traverse(o=>{
+    if(o.isMesh && o.geometry){
+      const pos = o.geometry.attributes.position;
+      if(pos) verts += pos.count;
+      tris += o.geometry.index ? o.geometry.index.count/3 : (pos ? pos.count/3 : 0);
+    }
+  });
+  return { verts: Math.round(verts), tris: Math.round(tris) };
+}
+
+$("#btnSaveModelLib").addEventListener("click", ()=>{
+  const item = items.find(i=>i.id===activeId);
+  if(!item) return;
+  const suggested = item.isSample ? "Atlas Lounge Chair" : item.name.replace(/\.[^.]+$/, "");
+  const name = prompt("Model Kütüphanesine kaydedilecek ad:", suggested);
+  if(!name) return;
+  exporter.parse(item.group, async (result)=>{
+    try{
+      const blob = new Blob([result], { type:"model/gltf-binary" });
+      const { verts, tris } = countGeometry(item.group);
+      const gizmoWasVisible = transformGizmoObj.visible;
+      transformGizmoObj.visible = false;
+      composer.render();
+      transformGizmoObj.visible = gizmoWasVisible;
+      const thumb = await new Promise(res=> renderer.domElement.toBlob(res, "image/png"));
+      const rec = blankModel();
+      rec.name = name; rec.format = "GLB";
+      rec.fileBlob = blob; rec.fileName = name + ".glb";
+      rec.vertCount = verts; rec.polyCount = tris; rec.thumb = thumb;
+      rec.materialsUsed = collectMaterials(item.group).map(m=>m.name || "Malzeme");
+      await dbPut("models", rec);
+      toast("Model Kütüphanesine kaydedildi: " + name);
+    }catch(err){
+      toast("Kaydetme hatası: " + err.message, true);
+      console.error(err);
+    }
+  }, (err)=>{ toast("Dışa aktarma hatası.", true); console.error(err); }, { binary:true });
+});
+
+/* ---------------- Aydınlatma sekmesi ---------------- */
+const LIGHTS = [
+  {id:"studio", name:"Stüdyo",     desc:"Nötr, yumuşak",   bg:["#E7E4DD","#CFCAC0"], fill:0x3a3a3a, keyI:3.2, fillI:0.65, az:45,  el:70, kelvin:5500},
+  {id:"gallery",name:"Galeri",     desc:"Sıcak spot",      bg:["#EAE0CE","#C9B389"], fill:0x2c2620, keyI:3.6, fillI:0.55, az:35,  el:45, kelvin:3200},
+  {id:"sunset", name:"Gün Batımı", desc:"Dramatik, sıcak", bg:["#E9B583","#8A4A3C"], fill:0x1c2b3a, keyI:3.8, fillI:0.5,  az:20,  el:14, kelvin:2500},
+  {id:"night",  name:"Gece",       desc:"Yüksek kontrast", bg:["#3A3D44","#141518"], fill:0x0c0d10, keyI:2.6, fillI:0.35, az:205, el:32, kelvin:8200},
+];
+let curLight = "studio";
+let sunAz = 45, sunEl = 70, curKelvin = 5500;
+
+function renderLights(){
+  $("#lightGrid").innerHTML = LIGHTS.map(l=>`
+    <div class="light-card ${curLight===l.id?'on':''}" data-id="${l.id}">
+      <div class="light-swatch" style="background:linear-gradient(135deg, ${l.bg[0]}, ${l.bg[1]})"></div>
+      <b>${l.name}</b><span>${l.desc}</span>
+    </div>`).join("");
+  document.querySelectorAll(".light-card").forEach(c=>c.addEventListener("click", ()=>{
+    curLight = c.dataset.id;
+    const L = LIGHTS.find(l=>l.id===curLight);
+    sunAz = L.az; sunEl = L.el; curKelvin = L.kelvin;
+    $("#temperature").value = curKelvin; $("#tempVal").textContent = curKelvin + "K";
+    updateSunHandle();
+    applyLighting();
+    renderLights();
+  }));
+}
+
+/* ---------------- Ortam HDRI (G:\...\HDR_Light_Studio_25_Free_Studio_HDRI — bkz. 03_ARAC/hdri junction) ----------------
+   HDRI, LIGHTS ön ayarlarından BAĞIMSIZ bir katmandır: LIGHTS anahtar ışığın rengini/yönünü ve
+   arkaplan gradyanını belirler, HDRI ise gerçekçi yansıma/dolgu ışığı (IBL) sağlar — ikisi birlikte
+   kullanılabilir. Dosyalar 13-53MB arası .exr olduğu için yalnızca seçildiğinde tembel (lazy) yüklenir
+   ve GPU belleğini şişirmemek için en fazla 3 tanesi önbellekte tutulur (LRU, en eski atılır). */
+const HDRI_LIST = Array.from({length:25}, (_,i)=>{
+  const n = String(i+1).padStart(2,"0");
+  return { id:"hdri"+n, label:"Studio "+n, file:"hdri/HDR_Light_Studio_Free_HDRI_Design_"+n+".exr" };
+});
+const HDRI_CACHE_LIMIT = 3;
+const exrLoader = new EXRLoader().setDataType(THREE.FloatType);
+const hdriCache = new Map(); // id -> { equirect, pmremTex }
+let curHdriId = null, hdriLoading = false;
+let hdriIntensity = 1, hdriRotationDeg = 0, hdriBgOn = false;
+
+function setHdriRotation(deg){
+  const rad = THREE.MathUtils.degToRad(deg);
+  // scene.environmentRotation/backgroundRotation yalnızca yeterince güncel three.js sürümlerinde
+  // vardır — yoksa sessizce atlanır (döndürme çalışmaz ama uygulama çökmez).
+  if(scene.environmentRotation) scene.environmentRotation.y = rad;
+  if(scene.backgroundRotation) scene.backgroundRotation.y = rad;
+}
+function applyEnvIntensity(){
+  if("environmentIntensity" in scene) scene.environmentIntensity = hdriIntensity;
+  items.forEach(it=> collectMaterials(it.group).forEach(m=> m.envMapIntensity = hdriIntensity));
+}
+function cacheHdri(id, result){
+  hdriCache.set(id, result);
+  if(hdriCache.size > HDRI_CACHE_LIMIT){
+    const oldestId = hdriCache.keys().next().value;
+    if(oldestId !== id){
+      const old = hdriCache.get(oldestId);
+      old.equirect.dispose(); old.pmremTex.dispose();
+      hdriCache.delete(oldestId);
+    }
+  }
+}
+function loadHdri(entry){
+  if(hdriCache.has(entry.id)) return Promise.resolve(hdriCache.get(entry.id));
+  if(!pmrem) return Promise.reject(new Error("PBR ortam sistemi bu tarayıcıda kurulamadı."));
+  return new Promise((resolve, reject)=>{
+    exrLoader.load(entry.file, tex=>{
+      try{
+        tex.mapping = THREE.EquirectangularReflectionMapping;
+        const pmremTex = pmrem.fromEquirectangular(tex).texture;
+        const result = { equirect: tex, pmremTex };
+        cacheHdri(entry.id, result);
+        resolve(result);
+      }catch(err){ reject(err); }
+    }, undefined, reject);
+  });
+}
+async function applyHdri(entry){
+  if(hdriLoading) return;
+  if(!entry){
+    curHdriId = null;
+    scene.environment = roomEnvTexture;
+    scene.background = null;
+    renderHdriList();
+    return;
+  }
+  hdriLoading = true;
+  renderHdriList();
+  toast("HDRI yükleniyor: " + entry.label + " …");
+  try{
+    const { equirect, pmremTex } = await loadHdri(entry);
+    curHdriId = entry.id;
+    scene.environment = pmremTex;
+    scene.background = hdriBgOn ? equirect : null;
+    setHdriRotation(hdriRotationDeg);
+    applyEnvIntensity();
+    toast(entry.label + " uygulandı.");
+  }catch(err){
+    toast("HDRI yüklenemedi: " + err.message, true);
+    console.error(err);
+  }finally{
+    hdriLoading = false;
+    renderHdriList();
+  }
+}
+/* ---- HDRI görsel önizlemeleri: sayı yerine gerçek küçük resim ----
+   25 dosyanın hepsini önden indirip decode etmek ağır olacağından, her HDRI yalnızca BİR KEZ
+   (arka planda, sırayla) çözülüp küçük bir tonemap'lenmiş JPEG'e indirgenir ve tarayıcının
+   localStorage'ında saklanır — sonraki sayfa açılışlarında anında, tekrar decode etmeden görünür. */
+function hdriThumbKey(id){ return "hdriThumb_" + id; }
+function getCachedHdriThumb(id){
+  try{ return localStorage.getItem(hdriThumbKey(id)); }catch(e){ return null; }
+}
+function setCachedHdriThumb(id, dataUrl){
+  try{ localStorage.setItem(hdriThumbKey(id), dataUrl); }catch(e){ /* kota dolmuş olabilir, sessizce yut */ }
+}
+function exrImageToThumbDataUrl(image, w, h){
+  const { width, height, data } = image;
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  const out = ctx.createImageData(w, h);
+  for(let ty=0; ty<h; ty++){
+    const sy = Math.min(height-1, (ty/h*height) | 0);
+    for(let tx=0; tx<w; tx++){
+      const sx = Math.min(width-1, (tx/w*width) | 0);
+      const si = (sy*width + sx) * 4, di = (ty*w + tx) * 4;
+      for(let c=0; c<3; c++){
+        let v = data[si+c] || 0;
+        v = v / (1 + v);              // basit Reinhard tonemap (HDR → 0-1)
+        v = Math.pow(Math.max(v,0), 1/2.2); // gamma
+        out.data[di+c] = Math.max(0, Math.min(255, Math.round(v*255)));
+      }
+      out.data[di+3] = 255;
+    }
+  }
+  ctx.putImageData(out, 0, 0);
+  return canvas.toDataURL("image/jpeg", 0.72);
+}
+function ensureHdriThumb(entry){
+  if(getCachedHdriThumb(entry.id)) return Promise.resolve();
+  return new Promise(resolve=>{
+    exrLoader.load(entry.file, tex=>{
+      try{
+        const dataUrl = exrImageToThumbDataUrl(tex.image, 108, 54);
+        setCachedHdriThumb(entry.id, dataUrl);
+        const btn = document.querySelector(`[data-hdri="${entry.id}"]`);
+        if(btn){ btn.style.backgroundImage = `url(${dataUrl})`; btn.classList.add("has-thumb"); btn.textContent = ""; }
+      }catch(err){ console.warn("HDRI önizleme oluşturulamadı:", entry.id, err); }
+      tex.dispose();
+      resolve();
+    }, undefined, ()=>resolve());
+  });
+}
+async function generateHdriThumbsInBackground(){
+  for(const entry of HDRI_LIST){
+    if(getCachedHdriThumb(entry.id)) continue;
+    await ensureHdriThumb(entry);
+    await new Promise(r=>setTimeout(r, 30)); // ana thread'e nefes payı
+  }
+}
+function renderHdriList(){
+  const el = $("#hdriList");
+  el.innerHTML = `<button class="hdri-btn hdri-off ${!curHdriId?'on':''}" data-hdri="" ${hdriLoading?'disabled':''}>Kapalı</button>` +
+    HDRI_LIST.map(h=>{
+      const thumb = getCachedHdriThumb(h.id);
+      const style = thumb ? ` style="background-image:url(${thumb})"` : "";
+      return `<button class="hdri-btn ${curHdriId===h.id?'on':''} ${thumb?'has-thumb':''}"${style} data-hdri="${h.id}" title="${h.label}" ${hdriLoading?'disabled':''}>${thumb?'':h.label.replace('Studio ','')}</button>`;
+    }).join("");
+  el.querySelectorAll("[data-hdri]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const id = btn.dataset.hdri;
+      $("#hdriExtra").style.display = id ? "block" : "none";
+      applyHdri(id ? HDRI_LIST.find(h=>h.id===id) : null);
+    });
+  });
+}
+$("#hdriIntensity").addEventListener("input", e=>{
+  hdriIntensity = (+e.target.value)/100;
+  $("#hdriIntensVal").textContent = e.target.value + "%";
+  applyEnvIntensity();
+});
+$("#hdriRotation").addEventListener("input", e=>{
+  hdriRotationDeg = +e.target.value;
+  $("#hdriRotVal").textContent = hdriRotationDeg + "°";
+  setHdriRotation(hdriRotationDeg);
+});
+$("#hdriBgToggle").addEventListener("change", e=>{
+  hdriBgOn = e.target.checked;
+  const cached = curHdriId ? hdriCache.get(curHdriId) : null;
+  scene.background = (hdriBgOn && cached) ? cached.equirect : null;
+});
+
+function updateSunHandle(){
+  const R = 39; // pad yarıçapı (14px iç boşluk çıkarılmış, .ring inset:14px'e denk)
+  const cx = 52, cy = 52; // .sun-pad 104x104 merkezi
+  const azRad = THREE.MathUtils.degToRad(sunAz);
+  const norm = 1 - (sunEl - 8) / (85 - 8); // 85°→0 (merkez), 8°→1 (kenar)
+  const r = Math.max(0, Math.min(1, norm)) * R;
+  const x = cx + Math.cos(azRad) * r, y = cy + Math.sin(azRad) * r;
+  $("#sunHandle").style.left = x + "px"; $("#sunHandle").style.top = y + "px";
+  $("#sunAzVal").textContent = Math.round(sunAz) + "°";
+  $("#sunElVal").textContent = Math.round(sunEl) + "°";
+}
+function applyLighting(){
+  const L = LIGHTS.find(l=>l.id===curLight);
+  const intensity = (+$("#intensity").value)/100;
+  $("#stage-bg").style.background = `radial-gradient(120% 90% at 50% -10%, ${L.bg[0]}, ${L.bg[1]} 78%)`;
+  keyLight.color.copy(kelvinToRGB(curKelvin)); keyLight.intensity = L.keyI * intensity;
+  fillLight.color.set(0xffffff); fillLight.groundColor.set(L.fill); fillLight.intensity = L.fillI * intensity;
+  setSunDirection(sunAz, sunEl);
+  $("#hudLight").textContent = "Aydınlatma: " + L.name;
+}
+$("#intensity").addEventListener("input", e=>{ $("#intensVal").textContent = e.target.value+"%"; applyLighting(); });
+$("#temperature").addEventListener("input", e=>{ curKelvin = +e.target.value; $("#tempVal").textContent = curKelvin+"K"; applyLighting(); });
+$("#shadowSharp").addEventListener("input", e=>{
+  const v = +e.target.value;
+  // Frustum artık dar ve dinamik (fitShadowFrustum) olduğu için eski 0.15–26 aralığı aşırı
+  // bulanıklaştırıyordu (yüksek radius + dar frustum = gölgenin tamamen erimesi). 0.1–9 bu
+  // frustum ölçeğiyle "keskin" ↔ "çok yumuşak" arasında gerçekçi bir aralık veriyor.
+  const radius = THREE.MathUtils.lerp(0.1, 9, v/100); // 0=keskin(küçük ışık kaynağı), 100=çok yumuşak(geniş alan ışığı)
+  keyLight.shadow.radius = radius;
+  const label = v<20 ? "Çok Keskin" : v<45 ? "Keskin" : v<70 ? "Orta" : v<88 ? "Yumuşak" : "Çok Yumuşak";
+  $("#shadowVal").textContent = label;
+});
+
+/* ---- gökyüzü pozisyon pedi: sürükle-bırak ---- */
+(function(){
+  const pad = $("#sunPad");
+  let dragging = false;
+  function fromEvent(e){
+    const rect = pad.getBoundingClientRect();
+    const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+    const dx = e.clientX - cx, dy = e.clientY - cy;
+    const R = rect.width/2 - 13;
+    const dist = Math.min(Math.hypot(dx,dy), R);
+    const az = THREE.MathUtils.radToDeg(Math.atan2(dy, dx));
+    const norm = dist / R; // 0=merkez(yüksek), 1=kenar(alçak)
+    const el = 85 - norm * (85 - 8);
+    sunAz = (az + 360) % 360; sunEl = el;
+    updateSunHandle();
+    setSunDirection(sunAz, sunEl);
+  }
+  pad.addEventListener("pointerdown", e=>{ dragging=true; pad.setPointerCapture(e.pointerId); fromEvent(e); });
+  pad.addEventListener("pointermove", e=>{ if(dragging) fromEvent(e); });
+  pad.addEventListener("pointerup", ()=>{ dragging=false; });
+  pad.addEventListener("pointercancel", ()=>{ dragging=false; });
+})();
+// Pozlama tek bir global renderer özelliği (toneMappingExposure) — Aydınlatma sekmesindeki
+// eski slider ile Kamera sekmesindeki "Görüntü Ayarları" slider'ı AYNI değeri gösterir/değiştirir.
+function setExposure(v){
+  renderer.toneMappingExposure = v;
+  $("#exposVal").textContent = v.toFixed(2);
+  $("#exposure").value = Math.round(v*100);
+  $("#camExposureVal").textContent = v.toFixed(2);
+  $("#camExposure").value = Math.round(v*100);
+}
+$("#exposure").addEventListener("input", e=> setExposure((+e.target.value)/100));
+
+/* ---------------- Sahne sekmesi ---------------- */
+$("#scaleRange").addEventListener("input", e=>{
+  const item = items.find(i=>i.id===activeId); if(!item) return;
+  item.userScale = (+e.target.value)/100;
+  item.group.scale.setScalar(item.baseScale * item.userScale);
+  $("#scaleVal").textContent = item.userScale.toFixed(2)+"×";
+  refreshShadowForActive();
+});
+$("#btnFloor").addEventListener("click", ()=>{
+  const item = items.find(i=>i.id===activeId); if(!item) return;
+  const box = new THREE.Box3().setFromObject(item.group);
+  item.group.position.y -= box.min.y;
+  refreshShadowForActive();
+  toast("Model zemine oturtuldu.");
+});
+$("#btnRecenter").addEventListener("click", frameActive);
+$("#btnDelete").addEventListener("click", ()=>{ if(activeId) removeItem(activeId); });
+
+/* ---------------- Sekme geçişi ---------------- */
+document.querySelectorAll(".seg button").forEach(btn=>btn.addEventListener("click", ()=>{
+  document.querySelectorAll(".seg button").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  ["material","light","camera","scene"].forEach(t=>{ $("#tab-"+t).style.display = (t===btn.dataset.tab)?"block":"none"; });
+}));
+
+/* ---------------- Kayar paneller (varsayılan gizli, kenar tırnağıyla aç/kapa) ---------------- */
+$("#toggleScene").addEventListener("click", ()=> $("#scenePanel").classList.toggle("open"));
+$("#toggleConfig").addEventListener("click", ()=> $("#configPanel").classList.toggle("open"));
+
+// Mouse imleci ekrana yaklaşınca (veya panelin kendisinin üzerindeyken) panel otomatik açılır,
+// imleç her ikisinden de ayrılınca kısa bir gecikmeyle kapanır — kenar tırnağına tıklamak hâlâ
+// çalışır ama artık zorunlu değil.
+function setupHoverPanel(panel, zone){
+  let closeTimer = null;
+  const open = () => { clearTimeout(closeTimer); panel.classList.add("open"); };
+  const scheduleClose = () => { clearTimeout(closeTimer); closeTimer = setTimeout(() => panel.classList.remove("open"), 250); };
+  zone.addEventListener("mouseenter", open);
+  zone.addEventListener("mouseleave", scheduleClose);
+  panel.addEventListener("mouseenter", open);
+  panel.addEventListener("mouseleave", scheduleClose);
+}
+setupHoverPanel($("#scenePanel"), $("#hoverZoneLeft"));
+setupHoverPanel($("#configPanel"), $("#hoverZoneRight"));
+
+/* ---------------- Viewport araçları ---------------- */
+let gridOn = false;
+$("#gridToggle").addEventListener("click", (e)=>{ gridOn=!gridOn; grid.visible=gridOn; e.currentTarget.classList.toggle("on", gridOn); });
+$("#resetView").addEventListener("click", frameActive);
+// Ortografik kamerada "mesafe" görsel ölçeği etkilemez — zoom .zoom özelliğiyle yapılır
+// (OrbitControls'un fare tekerleği davranışıyla da tutarlı).
+$("#zoomIn").addEventListener("click", ()=>{
+  if(camera.isPerspectiveCamera){ camera.position.lerp(controls.target, 0.18); }
+  else{ camera.zoom *= 1.2; camera.updateProjectionMatrix(); }
+  controls.update();
+});
+$("#zoomOut").addEventListener("click", ()=>{
+  if(camera.isPerspectiveCamera){ const d=camera.position.clone().sub(controls.target).multiplyScalar(1.22); camera.position.copy(controls.target).add(d); }
+  else{ camera.zoom /= 1.2; camera.updateProjectionMatrix(); }
+  controls.update();
+});
+
+/* ---- Tel kafes / UV grid / öncesi-sonrası — hepsi aktif objenin malzemelerine geçici olarak uygulanır ----
+   Uygula/geri-al mantığı ayrı fonksiyonlara çıkarıldı: hem buton tıklamasında hem de obje değiştirilirken
+   (setActive) veya bir doku değiştirilirken (rebuildMaterialTab) tutarlı şekilde geri alınabilsin. */
+let wireOn = false, uvOn = false, compareOn = false;
+function activeMats(){ const item = items.find(i=>i.id===activeId); return item ? collectMaterials(item.group) : []; }
+
+function applyWireframe(mats, on){ mats.forEach(m=> m.wireframe = on); }
+
+function applyUVGrid(mats, on){
+  mats.forEach(m=>{
+    if(on){ m.userData.__beforeMap = m.map || null; m.map = getUVGridTexture(); }
+    else{ m.map = ("__beforeMap" in m.userData) ? m.userData.__beforeMap : m.map; delete m.userData.__beforeMap; }
+    m.needsUpdate = true;
+  });
+}
+
+function applyCompareMode(mats, on){
+  mats.forEach(mat=>{
+    ensureUserData(mat);
+    TEX_SLOTS.forEach(slot=>{
+      const orig = mat.userData.__orig[slot.key];
+      if(!orig) return;
+      if(slot.key === "normalMap"){
+        if(on){ mat.userData.__beforeNormalScale = mat.normalScale.clone(); mat.normalScale.set(1,1); }
+        else if(mat.userData.__beforeNormalScale){ mat.normalScale.copy(mat.userData.__beforeNormalScale); }
+        return;
+      }
+      if(slot.key === "displacementMap"){
+        if(on){ mat.userData.__beforeDisp = { scale:mat.displacementScale, bias:mat.displacementBias }; mat.displacementScale=0; mat.displacementBias=0; }
+        else if(mat.userData.__beforeDisp){ mat.displacementScale = mat.userData.__beforeDisp.scale; mat.displacementBias = mat.userData.__beforeDisp.bias; }
+      }
+      const params = on ? defaultParams(slot.key) : mat.userData.__params[slot.key];
+      const canvas = applyAdjust(slot.key, orig, params);
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.colorSpace = slot.srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+      mat[slot.key] = tex;
+      applySizing(mat, slot.key);
+      mat.needsUpdate = true;
+    });
+  });
+}
+
+function resetViewToggles(){
+  wireOn = uvOn = compareOn = false;
+  $("#wireToggle").classList.remove("on"); $("#uvToggle").classList.remove("on"); $("#compareToggle").classList.remove("on");
+}
+// Bir dokuyu elle değiştirmeden ya da Auto-PBR üretmeden önce çağrılır — açık önizleme
+// anahtarlarını hem görsel hem durumsal olarak temizler, aksi halde bayat referanslar kalabilir.
+function disableViewTogglesForActive(){
+  if(!wireOn && !uvOn && !compareOn) return;
+  const mats = activeMats();
+  if(wireOn) applyWireframe(mats, false);
+  if(uvOn) applyUVGrid(mats, false);
+  if(compareOn) applyCompareMode(mats, false);
+  resetViewToggles();
+}
+
+$("#wireToggle").addEventListener("click", e=>{
+  wireOn = !wireOn; e.currentTarget.classList.toggle("on", wireOn);
+  applyWireframe(activeMats(), wireOn);
+});
+$("#uvToggle").addEventListener("click", e=>{
+  uvOn = !uvOn; e.currentTarget.classList.toggle("on", uvOn);
+  applyUVGrid(activeMats(), uvOn);
+});
+$("#compareToggle").addEventListener("click", e=>{
+  compareOn = !compareOn; e.currentTarget.classList.toggle("on", compareOn);
+  applyCompareMode(activeMats(), compareOn);
+});
+
+/* ---------------- Ekran görüntüsü / GLB dışa aktar ---------------- */
+$("#btnShot").addEventListener("click", ()=>{
+  const gizmoWasVisible = transformGizmoObj.visible;
+  transformGizmoObj.visible = false;
+  composer.render();
+  const url = renderer.domElement.toDataURL("image/png");
+  transformGizmoObj.visible = gizmoWasVisible;
+  const a = document.createElement("a"); a.href = url; a.download = "configurator-onizleme.png"; a.click();
+  toast("Ekran görüntüsü indirildi.");
+});
+$("#btnExport").addEventListener("click", ()=>{
+  const item = items.find(i=>i.id===activeId); if(!item) return;
+  exporter.parse(item.group, (result)=>{
+    const blob = new Blob([result], {type:"application/octet-stream"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href=url;
+    a.download = (item.name.replace(/\.[^.]+$/,'') || "model") + "_duzenlendi.glb"; a.click();
+    URL.revokeObjectURL(url);
+    toast("GLB dışa aktarıldı.");
+  }, (err)=>{ toast("Dışa aktarma hatası.", true); console.error(err); }, {binary:true});
+});
+
+/* ---------------- Materyal/Model Kütüphanesinden içe aktarma ----------------
+   İki yol: (1) kütüphane sayfasındaki kartı sürükleyip viewport'a ya da bir malzeme
+   kartının üstüne bırakmak (application/x-cs-item — bkz. dropZone/mat-card drop handler'ları);
+   (2) kütüphane kartındaki "→ Editöre Aktar" butonuna tıklamak — bu, localStorage üzerinden
+   (cs_pending_import) bir "beklemede" işaret bırakıp bu sayfaya yönlendirir, sayfa açılışında
+   consumePendingImport() bunu okuyup uygular. İki sayfa da aynı origin'i (aynı IndexedDB'yi)
+   paylaştığı için kayıt doğrudan dbGet ile okunabiliyor. */
+async function importModelRecord(rec){
+  if(!rec.fileBlob){ toast("Bu model dosyası bu tarayıcıda mevcut değil (yalnızca meta veri kaydedilmiş).", true); return; }
+  toast("Model yükleniyor: " + (rec.name || "Model") + " …");
+  try{
+    const buf = await rec.fileBlob.arrayBuffer();
+    const ext = (rec.format || "").toLowerCase();
+    let object3D;
+    if(ext === "obj") object3D = objLoader.parse(new TextDecoder().decode(buf));
+    else object3D = await new Promise((res, rej)=> gltfLoader.parse(buf, "", g=>res(g.scene), rej));
+    addItem(rec.name || "Kütüphane Modeli", object3D, false);
+    toast("Model içe aktarıldı: " + (rec.name || "Model"));
+  }catch(err){
+    toast("Model içe aktarılamadı: " + err.message, true);
+    console.error(err);
+  }
+}
+
+async function applyMaterialRecordToActive(rec, targetUuid){
+  const item = items.find(i=>i.id===activeId);
+  if(!item){ toast("Önce bir model içe aktar, sonra materyali uygula.", true); return; }
+  const mats = collectMaterials(item.group);
+  if(!mats.length){ toast("Aktif objede düzenlenebilir malzeme yok.", true); return; }
+  const mat = (targetUuid && mats.find(m=>m.uuid===targetUuid)) || mats[0];
+  ensureUserData(mat);
+  disableViewTogglesForActive();
+  mat.color.set(rec.color || "#" + mat.color.getHexString());
+  if(typeof rec.roughness === "number") mat.roughness = rec.roughness;
+  if(typeof rec.metalness === "number") mat.metalness = rec.metalness;
+  mat.userData.__params = JSON.parse(JSON.stringify(rec.params || {}));
+  if(rec.sizing) mat.userData.__sizing = JSON.parse(JSON.stringify(rec.sizing));
+  for(const slot of TEX_SLOTS){
+    const blob = rec.maps?.[slot.key];
+    if(!blob) continue;
+    const url = URL.createObjectURL(blob);
+    await new Promise(resolve=>{
+      new THREE.TextureLoader().load(url, tex=>{
+        tex.colorSpace = slot.srgb ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+        mat[slot.key] = tex;
+        mat.userData.__orig[slot.key] = tex.image;
+        if(!mat.userData.__params[slot.key]) mat.userData.__params[slot.key] = defaultParams(slot.key);
+        applySizing(mat, slot.key);
+        if(slot.key === "normalMap") applyNormalMaterialParams(mat, mat.userData.__params[slot.key]);
+        if(slot.key === "displacementMap") applyHeightMaterialParams(mat, mat.userData.__params[slot.key]);
+        if(slot.needsUV2){
+          item.group.traverse(o=>{
+            if(o.isMesh && o.geometry?.attributes?.uv && !o.geometry.attributes.uv2){
+              o.geometry.setAttribute("uv2", o.geometry.attributes.uv);
+            }
+          });
+        }
+        if(slot.isEmissive){
+          if(mat.emissive.getHex() === 0x000000) mat.emissive.set(0xffffff);
+          if(!mat.emissiveIntensity) mat.emissiveIntensity = 1;
+        }
+        URL.revokeObjectURL(url);
+        resolve();
+      }, undefined, ()=>resolve());
+    });
+  }
+  mat.needsUpdate = true;
+  rebuildMaterialTab();
+  toast("Materyal uygulandı: " + (rec.name || "Materyal"));
+}
+
+async function handleLibraryDropPayload(payload, targetUuid){
+  try{
+    const { type, id } = JSON.parse(payload);
+    if(type === "model"){
+      const rec = await dbGet("models", id);
+      if(rec) await importModelRecord(rec); else toast("Model bulunamadı.", true);
+    }else if(type === "material"){
+      const rec = await dbGet("materials", id);
+      if(rec) await applyMaterialRecordToActive(rec, targetUuid); else toast("Materyal bulunamadı.", true);
+    }
+  }catch(err){ console.error(err); }
+}
+
+async function consumePendingImport(){
+  const raw = localStorage.getItem("cs_pending_import");
+  if(!raw) return;
+  localStorage.removeItem("cs_pending_import");
+  await handleLibraryDropPayload(raw);
+}
+
+/* ================= başlangıç ================= */
+applySnapSettings();
+updateGizmoButtonsUI();
+renderCameraList();
+syncCameraFieldsFromLive();
+renderLights();
+renderHdriList();
+generateHdriThumbsInBackground();
+updateSunHandle();
+applyLighting();
+$("#shadowSharp").dispatchEvent(new Event("input"));
+addItem("Örnek Obje", makeSampleObject(), true);
+consumePendingImport();
+
+$("#engineDot").classList.add("ready");
+$("#engineText").textContent = "Motor hazır (Three.js WebGL)";
+</script>
