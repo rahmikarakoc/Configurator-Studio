@@ -5,7 +5,7 @@
 // SHA-256 hex hash'ini hesapla (örn. tarayıcı konsolunda
 // `crypto.subtle.digest('SHA-256', new TextEncoder().encode('yeniSifre')).then(b=>console.log([...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')))`)
 // ve aşağıdaki GATE_HASH'i onunla değiştir.
-const GATE_HASH = "bbec1a55603b4803fcd139964cd8ddf84f65a102991ee1387f8179fcb334de71"; // "configurator2026"
+const GATE_HASH = "53d2dd2504402eec1bc49ad74daf2e90c352f399842f3d5a3606892213c110fc"; // "1453"
 const GATE_STORAGE_KEY = "cs_gate_ok";
 
 async function sha256Hex(text) {
