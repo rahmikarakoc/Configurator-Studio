@@ -629,13 +629,18 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { generateAutoPBR, SURFACE_PRESETS } from './js/autopbr.js';
 import { ADJUST_SCHEMA, defaultParams, applyAdjust, applyNormalMaterialParams, applyHeightMaterialParams, debounce } from './js/map-adjust.js';
 import { getUVGridTexture } from './js/preview-objects.js';
-import { dbPut, dbGet, blankMaterial, blankModel } from '../04_KUTUPHANE/js/db.js';
+import { dbPut, dbGet, dbGetAll, blankMaterial, blankModel } from '../04_KUTUPHANE/js/db.js';
 import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { ColorGradeShader } from './js/colorgrade-shader.js';
+import { enforceAccessGate } from '../assets/access-gate.js';
+
+// Sayfanın geri kalanı (Three.js kurulumu dahil) şifre girilene kadar ÇALIŞMAZ —
+// hem "gizlilik" hem de kilit ekranı açıkken boşuna GPU/CPU harcamamak için.
+await enforceAccessGate();
 
 const $ = s => document.querySelector(s);
 function toast(msg, isErr){
@@ -2559,6 +2564,21 @@ async function consumePendingImport(){
   await handleLibraryDropPayload(raw);
 }
 
+/* Açılışta örnek sandalye yerine kütüphanedeki (varsa) en son güncellenen modeli yükler;
+   kütüphane boşsa veya model dosyası bu tarayıcıda mevcut değilse örnek objeye düşer. */
+async function loadDefaultOrSample(){
+  try{
+    const models = await dbGetAll("models");
+    const withFile = models.filter(m => m.fileBlob);
+    if(withFile.length){
+      withFile.sort((a,b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      await importModelRecord(withFile[0]);
+      if(items.length) return;
+    }
+  }catch(err){ console.error(err); }
+  addItem("Örnek Obje", makeSampleObject(), true);
+}
+
 /* ================= başlangıç ================= */
 applySnapSettings();
 updateGizmoButtonsUI();
@@ -2570,7 +2590,7 @@ generateHdriThumbsInBackground();
 updateSunHandle();
 applyLighting();
 $("#shadowSharp").dispatchEvent(new Event("input"));
-addItem("Örnek Obje", makeSampleObject(), true);
+await loadDefaultOrSample();
 consumePendingImport();
 
 $("#engineDot").classList.add("ready");
