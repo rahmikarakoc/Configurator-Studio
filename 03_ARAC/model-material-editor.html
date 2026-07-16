@@ -217,6 +217,14 @@
   .size-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:10px;color:var(--dim)}
   .size-grid label{display:flex;flex-direction:column;gap:3px}
   .size-grid input,.size-grid select{width:100%;font-size:11px;padding:5px 6px;border-radius:var(--r-sm);border:1px solid var(--line2);background:var(--panel2);color:var(--ink)}
+
+  /* Sol panel: ürün navigasyon (Dönüşüm) bölümü — Taşı/Döndür/Ölçekle mod butonları + Aynala */
+  .sp-transform{padding:14px 12px 16px;border-top:1px solid var(--line);overflow-y:auto;max-height:460px;flex:0 0 auto}
+  .gizmo-mode-row{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
+  .gizmo-mode-row .icon-btn{border:1px solid var(--line2)}
+  .mirror-row{display:flex;gap:6px;margin-top:8px}
+  .mirror-row .btn{flex:1;justify-content:center;margin-bottom:0}
+  .mirror-row .btn.on{background:linear-gradient(135deg, var(--accent2), var(--accent));border-color:transparent;color:#fff}
   .autopbr-box{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
   .ap-progress{margin-top:8px}
   .ap-bar{height:6px;border-radius:3px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
@@ -358,6 +366,42 @@
       </div>
       <input type="file" id="fileInput" accept=".glb,.gltf,.obj">
       <div class="item-list" id="itemList"></div>
+
+      <div class="sp-transform" id="spTransform">
+        <div class="slot" style="margin-bottom:14px">
+          <div class="slot-head">Dönüşüm</div>
+          <div class="gizmo-mode-row">
+            <button class="icon-btn" id="gizmoMoveL" title="Taşı (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><path d="m5 9-3 3 3 3M19 9l3 3-3 3M9 5l3-3 3 3M9 19l3 3 3-3"/></svg></button>
+            <button class="icon-btn" id="gizmoRotateL" title="Döndür (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4V1L7.5 5 12 9V6a6 6 0 1 1-6 6"/></svg></button>
+            <button class="icon-btn" id="gizmoScaleL" title="Ölçekle (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+          </div>
+          <div class="field">
+            <label>Ölçek <b id="scaleVal">1.00×</b></label>
+            <input type="range" id="scaleRange" min="20" max="300" value="100">
+          </div>
+          <div class="size-grid">
+            <label>Pos X<input type="number" id="objPosX" step="0.05"></label>
+            <label>Pos Y<input type="number" id="objPosY" step="0.05"></label>
+            <label>Pos Z<input type="number" id="objPosZ" step="0.05"></label>
+            <label>Rot X°<input type="number" id="objRotX" step="1"></label>
+            <label>Rot Y°<input type="number" id="objRotY" step="1"></label>
+            <label>Rot Z°<input type="number" id="objRotZ" step="1"></label>
+          </div>
+          <label class="hdri-chk"><input type="checkbox" id="gizmoSnap"> Izgaraya yapış (Snap)</label>
+          <div class="slot-head" style="margin-top:12px">Aynala (Mirror)</div>
+          <div class="mirror-row">
+            <button class="btn" id="btnMirrorX" title="X ekseninde aynala">X</button>
+            <button class="btn" id="btnMirrorY" title="Y ekseninde aynala">Y</button>
+            <button class="btn" id="btnMirrorZ" title="Z ekseninde aynala">Z</button>
+          </div>
+        </div>
+        <div class="slot scene-tools" style="margin-bottom:0">
+          <button class="btn" id="btnFloor">⤓ Zemine Otur</button>
+          <button class="btn" id="btnRecenter">⊙ Görünümü Ortala</button>
+          <button class="btn" id="btnDelete">🗑 Aktif Modeli Kaldır</button>
+        </div>
+      </div>
+
       <button class="edge-tab" id="toggleScene" title="Sahne panelini aç/kapat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 6 6 6-6 6"/></svg>
       </button>
@@ -574,27 +618,6 @@
         </div>
 
         <div id="tab-scene" style="display:none">
-          <div class="slot">
-            <div class="slot-head">Dönüşüm</div>
-            <div class="field">
-              <label>Ölçek <b id="scaleVal">1.00×</b></label>
-              <input type="range" id="scaleRange" min="20" max="300" value="100">
-            </div>
-            <div class="size-grid">
-              <label>Pos X<input type="number" id="objPosX" step="0.05"></label>
-              <label>Pos Y<input type="number" id="objPosY" step="0.05"></label>
-              <label>Pos Z<input type="number" id="objPosZ" step="0.05"></label>
-              <label>Rot X°<input type="number" id="objRotX" step="1"></label>
-              <label>Rot Y°<input type="number" id="objRotY" step="1"></label>
-              <label>Rot Z°<input type="number" id="objRotZ" step="1"></label>
-            </div>
-            <label class="hdri-chk"><input type="checkbox" id="gizmoSnap"> Izgaraya yapış (Snap)</label>
-          </div>
-          <div class="slot scene-tools">
-            <button class="btn" id="btnFloor">⤓ Zemine Otur</button>
-            <button class="btn" id="btnRecenter">⊙ Görünümü Ortala</button>
-            <button class="btn" id="btnDelete">🗑 Aktif Modeli Kaldır</button>
-          </div>
           <div class="slot">
             <div class="slot-head">Dışa Aktarma &amp; Kayıt</div>
             <div class="scene-tools">
@@ -1260,7 +1283,7 @@ function addItem(name, object3D, isSample){
     group.position.x += items.length * 1.6;
   }
 
-  const item = { id, name, group, baseScale, isSample: !!isSample, userScale: 1, visible: true, locked: false, groupTag: null };
+  const item = { id, name, group, baseScale, isSample: !!isSample, userScale: 1, mirror: {x:1,y:1,z:1}, visible: true, locked: false, groupTag: null };
   items.push(item);
   setActive(id);
   renderItemList();
@@ -1414,7 +1437,7 @@ function duplicateItem(id){
       o.material = Array.isArray(o.material) ? cloned : cloned[0];
     }
   });
-  const item = { id:newId, name:(src.isSample?"Atlas Lounge Chair":src.name)+" (kopya)", group, baseScale:src.baseScale, isSample:false, userScale:src.userScale, visible:true, locked:false, groupTag:src.groupTag };
+  const item = { id:newId, name:(src.isSample?"Atlas Lounge Chair":src.name)+" (kopya)", group, baseScale:src.baseScale, isSample:false, userScale:src.userScale, mirror:{...src.mirror}, visible:true, locked:false, groupTag:src.groupTag };
   items.push(item);
   setActive(newId);
   renderItemList();
@@ -1457,6 +1480,9 @@ function updateGizmoButtonsUI(){
   $("#gizmoMove").classList.toggle("on", gizmoMode === "translate");
   $("#gizmoRotate").classList.toggle("on", gizmoMode === "rotate");
   $("#gizmoScale").classList.toggle("on", gizmoMode === "scale");
+  $("#gizmoMoveL").classList.toggle("on", gizmoMode === "translate");
+  $("#gizmoRotateL").classList.toggle("on", gizmoMode === "rotate");
+  $("#gizmoScaleL").classList.toggle("on", gizmoMode === "scale");
 }
 function attachGizmoToActive(){
   if(!gizmoMode){ transformControls.detach(); return; }
@@ -1491,11 +1517,42 @@ function syncTransformFieldsFromActive(){
   $("#objRotX").value = THREE.MathUtils.radToDeg(item.group.rotation.x).toFixed(1);
   $("#objRotY").value = THREE.MathUtils.radToDeg(item.group.rotation.y).toFixed(1);
   $("#objRotZ").value = THREE.MathUtils.radToDeg(item.group.rotation.z).toFixed(1);
+  syncMirrorButtonsFromActive();
 }
+
+/* ---- Aynala (Mirror) — seçili eksende ölçek işaretini ters çevirir, geometriyi ayna görüntüsü yapar ---- */
+function applyItemScale(item){
+  item.group.scale.set(
+    item.baseScale * item.userScale * item.mirror.x,
+    item.baseScale * item.userScale * item.mirror.y,
+    item.baseScale * item.userScale * item.mirror.z
+  );
+}
+function toggleMirror(axis){
+  const item = items.find(i=>i.id===activeId);
+  if(!item){ toast("Önce bir obje seç.", true); return; }
+  if(item.locked){ toast("Bu obje kilitli — önce kilidi aç.", true); return; }
+  item.mirror[axis] *= -1;
+  applyItemScale(item);
+  refreshShadowForActive();
+  syncMirrorButtonsFromActive();
+}
+function syncMirrorButtonsFromActive(){
+  const item = items.find(i=>i.id===activeId);
+  $("#btnMirrorX").classList.toggle("on", !!item && item.mirror.x < 0);
+  $("#btnMirrorY").classList.toggle("on", !!item && item.mirror.y < 0);
+  $("#btnMirrorZ").classList.toggle("on", !!item && item.mirror.z < 0);
+}
+$("#btnMirrorX").addEventListener("click", ()=> toggleMirror("x"));
+$("#btnMirrorY").addEventListener("click", ()=> toggleMirror("y"));
+$("#btnMirrorZ").addEventListener("click", ()=> toggleMirror("z"));
 
 $("#gizmoMove").addEventListener("click", ()=> toggleGizmoMode("translate"));
 $("#gizmoRotate").addEventListener("click", ()=> toggleGizmoMode("rotate"));
 $("#gizmoScale").addEventListener("click", ()=> toggleGizmoMode("scale"));
+$("#gizmoMoveL").addEventListener("click", ()=> toggleGizmoMode("translate"));
+$("#gizmoRotateL").addEventListener("click", ()=> toggleGizmoMode("rotate"));
+$("#gizmoScaleL").addEventListener("click", ()=> toggleGizmoMode("scale"));
 $("#gizmoSnap").addEventListener("change", e=>{ snapOn = e.target.checked; applySnapSettings(); });
 
 // W/E/R kısayolları — yazı alanlarında (input/textarea/select) tetiklenmesin diye korunuyor.
@@ -2319,7 +2376,7 @@ $("#exposure").addEventListener("input", e=> setExposure((+e.target.value)/100))
 $("#scaleRange").addEventListener("input", e=>{
   const item = items.find(i=>i.id===activeId); if(!item) return;
   item.userScale = (+e.target.value)/100;
-  item.group.scale.setScalar(item.baseScale * item.userScale);
+  applyItemScale(item);
   $("#scaleVal").textContent = item.userScale.toFixed(2)+"×";
   refreshShadowForActive();
 });
