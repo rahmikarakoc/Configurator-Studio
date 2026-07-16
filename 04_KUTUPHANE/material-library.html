@@ -191,9 +191,6 @@
 
 <script type="module">
 import { dbGetAll, dbPut, dbDelete, dbGet, newId, blankMaterial } from './js/db.js';
-import { enforceAccessGate } from '../assets/access-gate.js';
-
-await enforceAccessGate();
 
 const $ = s => document.querySelector(s);
 function toast(msg, isErr){

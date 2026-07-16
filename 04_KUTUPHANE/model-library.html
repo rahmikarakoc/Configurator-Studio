@@ -232,9 +232,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { dbGetAll, dbPut, dbDelete, newId, blankModel } from './js/db.js';
-import { enforceAccessGate } from '../assets/access-gate.js';
-
-await enforceAccessGate();
 
 const $ = s => document.querySelector(s);
 function toast(msg, isErr){

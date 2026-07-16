@@ -636,11 +636,6 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { ColorGradeShader } from './js/colorgrade-shader.js';
-import { enforceAccessGate } from '../assets/access-gate.js';
-
-// Sayfanın geri kalanı (Three.js kurulumu dahil) şifre girilene kadar ÇALIŞMAZ —
-// hem "gizlilik" hem de kilit ekranı açıkken boşuna GPU/CPU harcamamak için.
-await enforceAccessGate();
 
 const $ = s => document.querySelector(s);
 function toast(msg, isErr){
