@@ -98,10 +98,15 @@
     position:absolute;top:12px;bottom:12px;left:12px;width:250px;z-index:30;
     background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
     border:1px solid var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;min-height:0;
-    transform:translateX(calc(-100% - 12px));transition:transform .3s cubic-bezier(.2,.9,.3,1);
+    /* Panel kayması: daha uzun süre + easeOutQuint benzeri eğri — açılış "yumuşak süzülme"
+       hissi verir. İçerik kayma sırasında hafifçe belirir (kulakçık hariç — o hep tam görünür). */
+    transform:translateX(calc(-100% - 12px));
+    transition:transform .45s cubic-bezier(.22,1,.36,1);
     box-shadow:var(--shadow-float);
   }
   .scenepanel.open{transform:translateX(0)}
+  .scenepanel > *:not(.edge-tab), .config > *:not(.edge-tab){opacity:.35;transition:opacity .4s ease .05s}
+  .scenepanel.open > *:not(.edge-tab), .config.open > *:not(.edge-tab){opacity:1}
   .scenepanel .edge-tab{right:-28px;border-left:none;border-radius:0 var(--r-md) var(--r-md) 0}
   .scenepanel.open .edge-tab svg{transform:rotate(180deg)}
   .sp-head{padding:16px 16px 10px}
@@ -179,7 +184,8 @@
     position:absolute;top:12px;bottom:12px;right:12px;width:320px;z-index:30;
     background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
     border:1px solid var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;min-height:0;
-    transform:translateX(calc(100% + 12px));transition:transform .3s cubic-bezier(.2,.9,.3,1);
+    transform:translateX(calc(100% + 12px));
+    transition:transform .45s cubic-bezier(.22,1,.36,1);
     box-shadow:var(--shadow-float);
   }
   .config.open{transform:translateX(0)}
