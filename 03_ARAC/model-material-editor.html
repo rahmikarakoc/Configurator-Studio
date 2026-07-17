@@ -259,6 +259,31 @@
   .hdri-btn.hdri-off{background-image:none;font-size:10px}
   .hdri-chk{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--dim);margin-top:10px;cursor:pointer}
 
+  /* Hazır Açılar — ikon kartları (4 sütun). Tıklamak yalnızca viewport kamerasını taşır. */
+  .cam-preset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+  .cam-preset-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 2px 6px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--panel2);color:var(--dim);cursor:pointer;transition:.12s;position:relative}
+  .cam-preset-btn svg{width:20px;height:20px}
+  .cam-preset-btn span{font-size:9px;font-weight:700;letter-spacing:.2px}
+  .cam-preset-btn:hover{color:var(--ink);border-color:var(--accent)}
+  .cam-preset-btn.on{color:#fff;border-color:transparent;background:linear-gradient(135deg, var(--accent2), var(--accent))}
+  .cam-preset-btn.on::after{content:"✓";position:absolute;top:2px;right:5px;font-size:9px;font-weight:900}
+  [data-theme="warm"] .cam-preset-btn.on{background:var(--ink)}
+  .cam-actions{display:flex;gap:6px;margin-top:8px}
+  .cam-actions .btn.danger:disabled{opacity:.35;cursor:not-allowed}
+  .cam-empty{font-size:11px;color:var(--dim);padding:10px 8px;border:1px dashed var(--line2);border-radius:var(--r-sm);text-align:center;line-height:1.5}
+  .cam-row .cam-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex:0 0 auto;opacity:0}
+  .cam-row.on .cam-dot{opacity:1}
+  /* Render ilerleme çubuğu */
+  .rend-progress{margin:6px 0 10px}
+  .rend-progress .bar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;margin-bottom:4px}
+  .rend-progress .fill{height:100%;width:0%;border-radius:3px;background:linear-gradient(90deg, var(--accent2), var(--accent));transition:width .2s}
+  .rend-progress span{font-size:10.5px;color:var(--dim);font-family:var(--font-mono)}
+  .matexp-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
+  /* Katlanabilir bölümler — sağ panel slot başlıkları tıklanınca içerik gizlenir */
+  .config-body .slot > .slot-head{cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:space-between}
+  .config-body .slot > .slot-head::after{content:"";width:7px;height:7px;border-right:1.5px solid var(--dim);border-bottom:1.5px solid var(--dim);transform:rotate(45deg);transition:transform .15s;flex:0 0 auto;margin-left:8px}
+  .config-body .slot.collapsed > .slot-head::after{transform:rotate(-45deg)}
+  .config-body .slot.collapsed > *:not(.slot-head){display:none !important}
   .cam-list{display:flex;flex-direction:column;gap:3px;max-height:210px;overflow-y:auto}
   .cam-row{display:flex;align-items:center;gap:6px;padding:7px 8px;border-radius:var(--r-sm);border:1px solid transparent;cursor:pointer;transition:.12s}
   .cam-row:hover{background:var(--panel2)}
@@ -340,6 +365,13 @@
   [data-theme="warm"] .light-card.on{ box-shadow:0 0 0 1.5px var(--ink) inset; border-color:var(--ink) }
   [data-theme="warm"] .hdri-btn.on{ border-color:var(--ink) }
   [data-theme="warm"] .hdri-btn.has-thumb.on::after{ box-shadow:0 0 0 2px var(--ink) inset }
+
+  /* Dar ekranlar: paneller viewport'u taşmasın */
+  @media (max-width:760px){
+    .config{width:min(320px, calc(100vw - 24px))}
+    .scenepanel{width:min(250px, calc(100vw - 24px))}
+    .vp-capture-pop{width:min(236px, calc(100vw - 32px))}
+  }
 </style>
 
 <div class="app">
@@ -485,7 +517,7 @@
         <button class="on" data-tab="material">Malzeme</button>
         <button data-tab="light">Aydınlatma</button>
         <button data-tab="camera">Kamera</button>
-        <button data-tab="scene">Sahne</button>
+        <button data-tab="renderexport">Render &amp; Export</button>
       </div>
       <div class="config-body">
         <div id="tab-material"></div>
@@ -548,9 +580,22 @@
 
         <div id="tab-camera" style="display:none">
           <div class="slot">
-            <div class="slot-head">Kameralar</div>
+            <div class="slot-head">Hazır Açılar</div>
+            <!-- İkon grid — tıklamak yeni kamera OLUŞTURMAZ, yalnızca aktif viewport kamerasını
+                 o açıya taşır (istenirse sonra "+ Kamera Ekle" ile özel kamera olarak kaydedilir). -->
+            <div class="cam-preset-grid" id="camPresetGrid"></div>
+          </div>
+
+          <div class="slot">
+            <div class="slot-head">Kameralarım</div>
             <div class="cam-list" id="camList"></div>
-            <button class="btn" id="btnCamSaveNew" style="width:100%;justify-content:center;margin-top:8px">+ Kamera Kaydet</button>
+            <div class="cam-actions">
+              <button class="btn" id="btnCamSaveNew" style="flex:1;justify-content:center">+ Kamera Ekle</button>
+              <button class="btn danger" id="btnCamDeleteSel" title="Seçili özel kamerayı sil" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+              </button>
+            </div>
+            <label class="hdri-chk" style="margin-top:8px"><input type="checkbox" id="camAnimToggle" checked> Kamera geçiş animasyonu</label>
           </div>
 
           <div class="slot">
@@ -646,19 +691,168 @@
 
           <div class="slot scene-tools">
             <button class="btn" id="btnCamReset">↺ Bu Kamerayı Sıfırla</button>
-            <button class="btn" id="btnCamDuplicate">⧉ Çoğalt</button>
-            <button class="btn danger" id="btnCamDelete" style="display:none">🗑 Kamerayı Sil</button>
           </div>
         </div>
 
-        <div id="tab-scene" style="display:none">
-          <div class="slot">
-            <div class="slot-head">Dışa Aktarma &amp; Kayıt</div>
-            <div class="scene-tools">
-              <button class="btn" id="btnSaveModelLib" disabled>💾 Modeli Kütüphaneye Kaydet</button>
-              <button class="btn" id="btnShot" disabled>📷 Ekran Görüntüsü</button>
+        <!-- Render & Export — eski "Sahne" sekmesinin yerini aldı. Sahne hiyerarşisi paneli
+             kaldırıldı (çoklu obje desteği viewport + sol panel üzerinden sürüyor). -->
+        <div id="tab-renderexport" style="display:none">
+          <div class="seg" id="reSeg" style="margin:0 0 4px">
+            <button class="on" data-retab="render">Render</button>
+            <button data-retab="modelexp">Model</button>
+            <button data-retab="matexp">Materyal</button>
+          </div>
+
+          <div id="retab-render">
+            <div class="slot">
+              <div class="slot-head">Çözünürlük</div>
+              <select id="rendResPreset">
+                <option value="512x512">512 × 512</option>
+                <option value="1024x1024">1024 × 1024</option>
+                <option value="1920x1080" selected>1920 × 1080 (Full HD)</option>
+                <option value="2048x2048">2048 × 2048</option>
+                <option value="3840x2160">3840 × 2160 (4K UHD)</option>
+                <option value="4096x4096">4096 × 4096</option>
+                <option value="7680x4320">7680 × 4320 (8K UHD)</option>
+                <option value="custom">Özel…</option>
+              </select>
+              <div class="size-grid" style="margin-top:8px">
+                <label>Genişlik<input type="number" id="rendW" value="1920" min="16" max="16384" step="1"></label>
+                <label>Yükseklik<input type="number" id="rendH" value="1080" min="16" max="16384" step="1"></label>
+              </div>
+              <label class="hdri-chk"><input type="checkbox" id="rendAspectLock" checked> En-boy oranını kilitle</label>
+            </div>
+
+            <div class="slot">
+              <div class="slot-head">Kamera</div>
+              <select id="rendCamMode">
+                <option value="viewport" selected>Aktif Viewport</option>
+                <option value="custom">Seçili Özel Kamera</option>
+                <option value="all">Tüm Özel Kameralar</option>
+              </select>
+              <select id="rendCamPick" style="margin-top:8px;display:none"></select>
+            </div>
+
+            <div class="slot">
+              <div class="slot-head">Format &amp; Arka Plan</div>
+              <div class="field">
+                <label>Format</label>
+                <select id="rendFormat">
+                  <option value="png" selected>PNG (kayıpsız, şeffaflık)</option>
+                  <option value="jpeg">JPG</option>
+                  <option value="webp">WebP</option>
+                </select>
+              </div>
+              <div class="field" id="rendQualityWrap" style="display:none">
+                <label>Kalite <b id="rendQualityVal">90</b></label>
+                <input type="range" id="rendQuality" min="50" max="100" value="90">
+              </div>
+              <div class="field">
+                <label>Arka Plan</label>
+                <select id="rendBg">
+                  <option value="current" selected>Viewport'taki gibi</option>
+                  <option value="transparent">Şeffaf</option>
+                  <option value="solid">Düz Renk</option>
+                  <option value="studio">Stüdyo Degradesi</option>
+                  <option value="hdri">HDRI</option>
+                </select>
+              </div>
+              <div class="field" id="rendBgColorWrap" style="display:none">
+                <label>Renk</label>
+                <input type="color" id="rendBgColor" value="#ffffff" style="width:100%;height:32px;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer">
+              </div>
+            </div>
+
+            <div class="slot">
+              <div class="slot-head">Kalite</div>
+              <div class="field">
+                <label>Kenar Yumuşatma (AA)</label>
+                <select id="rendSsaa">
+                  <option value="1" selected>Standart</option>
+                  <option value="2">Yüksek (2× süper örnekleme)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Gölge Kalitesi</label>
+                <select id="rendShadowQ">
+                  <option value="1024">Düşük (1K)</option>
+                  <option value="2048" selected>Orta (2K)</option>
+                  <option value="4096">Yüksek (4K)</option>
+                </select>
+              </div>
+              <div class="tex-hint">Pozlama, gamma, kontrast ve beyaz dengesi Kamera → Görüntü Ayarları'ndan uygulanır ve render çıktısına aynen yansır.</div>
+            </div>
+
+            <div class="rend-progress" id="rendProgress" style="display:none">
+              <div class="bar"><div class="fill" id="rendProgressFill"></div></div>
+              <span id="rendProgressText"></span>
+            </div>
+            <button class="btn primary" id="btnRenderGo" style="width:100%;justify-content:center">🎬 Render Al</button>
+            <div class="scene-tools" style="margin-top:10px">
+              <button class="btn" id="btnShot" disabled>📷 Hızlı Ekran Görüntüsü</button>
               <button class="btn" id="btnCropRender" disabled>🖼 Render'da Kırp</button>
-              <button class="btn primary" id="btnExport" disabled>⬇ GLB Dışa Aktar</button>
+            </div>
+          </div>
+
+          <div id="retab-modelexp" style="display:none">
+            <div class="slot">
+              <div class="slot-head">Model Dışa Aktar</div>
+              <div class="field">
+                <label>Format</label>
+                <select id="expFormat">
+                  <option value="glb" selected>GLB (binary glTF)</option>
+                  <option value="gltf">GLTF (JSON)</option>
+                  <option value="obj">OBJ</option>
+                  <option value="usdz">USDZ (AR / Apple)</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Kapsam</label>
+                <select id="expScope">
+                  <option value="active" selected>Seçili obje</option>
+                  <option value="all">Tüm objeler</option>
+                </select>
+              </div>
+              <label class="hdri-chk"><input type="checkbox" id="expTextures" checked> Malzeme ve dokuları dahil et (GLB/GLTF)</label>
+              <button class="btn primary" id="btnExport" disabled style="width:100%;justify-content:center;margin-top:10px">⬇ Dışa Aktar</button>
+            </div>
+            <div class="slot">
+              <div class="slot-head">Kütüphane</div>
+              <button class="btn" id="btnSaveModelLib" disabled style="width:100%;justify-content:center">💾 Modeli Kütüphaneye Kaydet</button>
+            </div>
+          </div>
+
+          <div id="retab-matexp" style="display:none">
+            <div class="slot">
+              <div class="slot-head">Materyal Haritaları</div>
+              <div class="tex-hint" style="margin-bottom:8px">Seçili objenin malzemelerindeki mevcut haritalar dışa aktarılır. Var olmayan haritalar atlanır.</div>
+              <div class="matexp-grid">
+                <label class="hdri-chk"><input type="checkbox" data-mexp="map" checked> Base Color</label>
+                <label class="hdri-chk"><input type="checkbox" data-mexp="roughnessMap" checked> Roughness</label>
+                <label class="hdri-chk"><input type="checkbox" data-mexp="normalMap" checked> Normal</label>
+                <label class="hdri-chk"><input type="checkbox" data-mexp="displacementMap"> Height</label>
+                <label class="hdri-chk"><input type="checkbox" data-mexp="aoMap"> AO</label>
+                <label class="hdri-chk"><input type="checkbox" data-mexp="metalnessMap"> Metallic</label>
+                <label class="hdri-chk"><input type="checkbox" data-mexp="alphaMap"> Opacity</label>
+                <label class="hdri-chk"><input type="checkbox" data-mexp="emissiveMap"> Emissive</label>
+              </div>
+              <div class="field" style="margin-top:8px">
+                <label>Çözünürlük</label>
+                <select id="mexpRes">
+                  <option value="1024">1K</option>
+                  <option value="2048" selected>2K</option>
+                  <option value="4096">4K</option>
+                  <option value="8192">8K</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Normal Map Formatı</label>
+                <select id="mexpNormal">
+                  <option value="opengl" selected>OpenGL (Y+)</option>
+                  <option value="directx">DirectX (Y−)</option>
+                </select>
+              </div>
+              <button class="btn primary" id="btnMatExport" disabled style="width:100%;justify-content:center;margin-top:10px">⬇ ZIP Olarak İndir</button>
             </div>
           </div>
         </div>
@@ -1031,6 +1225,44 @@ let CAMERAS = [
 let activeCameraId = "cam_persp";
 let customCameraCounter = 0;
 
+/* Hazır açı ikonları — her açıyı temsil eden sade çizimler (stroke=currentColor).
+   Front/Back düz kare (Back'te arka yüz vurgusu), Left/Right yan yüz paralelkenarı,
+   Top/Bottom plan görünüşü, Perspective kaçış çizgili frustum, Isometric izometrik küp. */
+const PRESET_ICONS = {
+  cam_front:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="5" width="14" height="14" rx="1"/><circle cx="12" cy="12" r="2.2"/></svg>',
+  cam_back:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="7" y="7" width="12" height="12" rx="1"/><path d="M7 9H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h2m2-1h2M15 4h2a1 1 0 0 1 1 1v2" stroke-dasharray="2 2"/></svg>',
+  cam_left:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 5l10 2v12l-10-2z"/><path d="M9 5v12M5 12h3m-3 0 1.5-1.5M5 12l1.5 1.5"/></svg>',
+  cam_right:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M15 5 5 7v12l10-2z"/><path d="M15 5v12m4-5h-3m3 0-1.5-1.5M19 12l-1.5 1.5"/></svg>',
+  cam_top:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="8" width="14" height="11" rx="1"/><path d="M12 2v4m0 0L10 4m2 2 2-2"/></svg>',
+  cam_bottom: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="5" y="5" width="14" height="11" rx="1"/><path d="M12 22v-4m0 4-2-2m2 2 2-2"/></svg>',
+  cam_persp:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M8 7h12v10H8z"/><path d="M8 7 3 5v14l5-2M20 7l1-2M20 17l1 2"/></svg>',
+  cam_iso:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3l7 4v9l-7 4-7-4V7z"/><path d="M12 11 5 7m7 4 7-4m-7 4v9"/></svg>',
+};
+const PRESET_TOOLTIPS = {
+  cam_front:"Front View", cam_back:"Back View", cam_left:"Left View", cam_right:"Right View",
+  cam_top:"Top View", cam_bottom:"Bottom View", cam_persp:"Perspective View", cam_iso:"Isometric View",
+};
+
+/* Kamera geçiş animasyonu — hazır açıya/özel kameraya geçerken konum+hedef yumuşakça
+   interpolasyonlanır. Ayarı kapatılabilir (localStorage). Kullanıcı viewport'a dokununca iptal. */
+let camAnimEnabled = localStorage.getItem("cs_cam_anim") !== "0";
+let camAnimToken = 0;
+function animateCameraTo(endPos, endTgt){
+  const myToken = ++camAnimToken;
+  const p0 = camera.position.clone(), t0 = controls.target.clone();
+  const dur = 500, start = performance.now();
+  (function step(){
+    if(myToken !== camAnimToken) return; // yeni animasyon ya da kullanıcı müdahalesi
+    const k = Math.min(1, (performance.now() - start) / dur);
+    const e = 1 - Math.pow(1 - k, 3); // easeOutCubic
+    camera.position.lerpVectors(p0, endPos, e);
+    controls.target.lerpVectors(t0, endTgt, e);
+    controls.update();
+    if(k < 1) requestAnimationFrame(step);
+    else syncCameraFieldsFromLive();
+  })();
+}
+
 function switchCameraType(type){
   // DİKKAT: camera.isPerspectiveCamera geçerli bir OrthographicCamera'da da undefined'dır
   // (o da kendi isOrthographicCamera=true bayrağını taşır) — bu yüzden "tanımsız mı" değil,
@@ -1075,10 +1307,12 @@ function switchCameraType(type){
   $("#camOrthoZoomWrap").style.display = camera.isPerspectiveCamera ? "none" : "block";
 }
 
-function applyCameraDef(def){
+function applyCameraDef(def, opts){
   activeCameraId = def.id;
+  const typeChanges = (def.type === "perspective") !== !!camera.isPerspectiveCamera;
   switchCameraType(def.type);
   camera.near = def.near; camera.far = def.far;
+  const startPos = camera.position.clone(), startTgt = controls.target.clone();
   if(!def.isCustom && def.dir){
     frameActive(def.dir);
   }else if(def.position && def.target){
@@ -1088,7 +1322,17 @@ function applyCameraDef(def){
   if(camera.isPerspectiveCamera){ camera.fov = def.fov; }
   else{ camera.zoom = def.orthoZoom || 1; }
   camera.updateProjectionMatrix();
-  controls.update();
+  // Animasyon: hedef konum yukarıda hesaplandı — başlangıca dönüp oraya yumuşakça kay.
+  // Persp↔orto geçişinde kamera nesnesi değiştiği için animasyonsuz (anlık) geçilir.
+  const endPos = camera.position.clone(), endTgt = controls.target.clone();
+  const animate = camAnimEnabled && !typeChanges && !(opts && opts.noAnim) &&
+                  (endPos.distanceTo(startPos) > 1e-4 || endTgt.distanceTo(startTgt) > 1e-4);
+  if(animate){
+    camera.position.copy(startPos); controls.target.copy(startTgt); controls.update();
+    animateCameraTo(endPos, endTgt);
+  }else{
+    controls.update();
+  }
   syncCameraFieldsFromLive();
   renderCameraList();
 }
@@ -1098,7 +1342,7 @@ function currentCameraDef(){ return CAMERAS.find(c=>c.id===activeCameraId) || CA
 function saveCurrentAsCamera(overwrite){
   const existing = overwrite ? currentCameraDef() : null;
   const id = existing ? existing.id : ("cam_custom_" + Math.random().toString(36).slice(2,8));
-  const name = existing ? existing.name : ("Custom Camera " + String(++customCameraCounter).padStart(2,"0"));
+  const name = existing ? existing.name : ("Camera " + String(++customCameraCounter).padStart(2,"0"));
   const def = makeCameraDef(id, name, true, {
     type: camera.isPerspectiveCamera ? "perspective" : "orthographic",
     position: { x:camera.position.x, y:camera.position.y, z:camera.position.z },
@@ -1133,46 +1377,78 @@ function duplicateCamera(id){
 function deleteCamera(id){
   const idx = CAMERAS.findIndex(c=>c.id===id);
   if(idx<0) return;
-  if(!CAMERAS[idx].isCustom){ toast("Hazır kameralar silinemez.", true); return; }
+  if(!CAMERAS[idx].isCustom){ toast("Hazır kamera açıları silinemez.", true); return; }
+  if(!confirm("Seçili kamerayı silmek istediğinize emin misiniz?\n\n" + CAMERAS[idx].name)) return;
   const wasActive = activeCameraId===id;
   CAMERAS.splice(idx,1);
-  if(wasActive && CAMERAS.length) applyCameraDef(CAMERAS[0]);
+  if(wasActive && CAMERAS.length) applyCameraDef(CAMERAS[0], {noAnim:true});
   else renderCameraList();
+  toast("Kamera silindi.");
 }
 function renameCamera(id, newName){
   const cam = CAMERAS.find(c=>c.id===id);
   if(cam && newName.trim()){ cam.name = newName.trim(); renderCameraList(); }
 }
 
+/* Hazır açılar ikon grid'i + yalnızca özel kameraları içeren "Kameralarım" listesi.
+   Hazır açıya tıklamak yeni kamera OLUŞTURMAZ — aktif viewport kamerasını o açıya taşır. */
 function renderCameraList(){
-  $("#camList").innerHTML = CAMERAS.map(c=>`
-    <div class="cam-row ${c.id===activeCameraId?'on':''}" data-camid="${c.id}">
-      <span class="cam-row-name" data-camname="${c.id}">${c.name}</span>
-      <button class="si-icon" data-camdup="${c.id}" title="Çoğalt">${COPY_ICON}</button>
-    </div>`).join("");
+  // Hazır Açılar
+  $("#camPresetGrid").innerHTML = CAMERAS.filter(c=>!c.isCustom).map(c=>`
+    <button class="cam-preset-btn ${c.id===activeCameraId?'on':''}" data-camid="${c.id}" title="${PRESET_TOOLTIPS[c.id]||c.name}">
+      ${PRESET_ICONS[c.id]||''}<span>${c.name}</span>
+    </button>`).join("");
+  $("#camPresetGrid").querySelectorAll("[data-camid]").forEach(btn=>{
+    btn.addEventListener("click", ()=> applyCameraDef(CAMERAS.find(c=>c.id===btn.dataset.camid)));
+  });
+
+  // Kameralarım (yalnızca kullanıcının kaydettikleri)
+  const customs = CAMERAS.filter(c=>c.isCustom);
+  if(!customs.length){
+    $("#camList").innerHTML = '<div class="cam-empty">Henüz özel kamera yok.<br>Viewport\'taki bakışı "+ Kamera Ekle" ile kaydet.</div>';
+  }else{
+    $("#camList").innerHTML = customs.map(c=>`
+      <div class="cam-row ${c.id===activeCameraId?'on':''}" data-camid="${c.id}">
+        <span class="cam-dot"></span>
+        <span class="cam-row-name" data-camname="${c.id}">${c.name}</span>
+        <button class="si-icon" data-camren="${c.id}" title="Yeniden adlandır"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg></button>
+        <button class="si-icon" data-camdup="${c.id}" title="Kopyala">${COPY_ICON}</button>
+        <button class="si-icon" data-camdel="${c.id}" title="Sil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>`).join("");
+  }
+  const startRename = (id)=>{
+    const nameEl = $("#camList").querySelector(`[data-camname="${id}"]`);
+    if(!nameEl) return;
+    const input = document.createElement("input");
+    input.type = "text"; input.className = "cam-row-input"; input.value = nameEl.textContent;
+    nameEl.replaceWith(input); input.focus(); input.select();
+    const commit = () => renameCamera(id, input.value);
+    input.addEventListener("blur", commit);
+    input.addEventListener("keydown", ev=>{ if(ev.key==="Enter") input.blur(); if(ev.key==="Escape"){ input.value=""; input.blur(); } });
+  };
   $("#camList").querySelectorAll(".cam-row").forEach(row=>{
     row.addEventListener("click", e=>{
-      if(e.target.closest("[data-camdup],[data-camname]")) return;
+      if(e.target.closest("[data-camdup],[data-camname],[data-camren],[data-camdel]")) return;
       applyCameraDef(CAMERAS.find(c=>c.id===row.dataset.camid));
     });
   });
   $("#camList").querySelectorAll("[data-camdup]").forEach(btn=>{
     btn.addEventListener("click", e=>{ e.stopPropagation(); duplicateCamera(btn.dataset.camdup); });
   });
-  $("#camList").querySelectorAll("[data-camname]").forEach(nameEl=>{
-    nameEl.addEventListener("dblclick", e=>{
-      e.stopPropagation();
-      const id = nameEl.closest(".cam-row").dataset.camid;
-      const input = document.createElement("input");
-      input.type = "text"; input.className = "cam-row-input"; input.value = nameEl.textContent;
-      nameEl.replaceWith(input); input.focus(); input.select();
-      const commit = () => renameCamera(id, input.value);
-      input.addEventListener("blur", commit);
-      input.addEventListener("keydown", ev=>{ if(ev.key==="Enter") input.blur(); if(ev.key==="Escape"){ input.value=""; input.blur(); } });
-    });
+  $("#camList").querySelectorAll("[data-camren]").forEach(btn=>{
+    btn.addEventListener("click", e=>{ e.stopPropagation(); startRename(btn.dataset.camren); });
   });
+  $("#camList").querySelectorAll("[data-camdel]").forEach(btn=>{
+    btn.addEventListener("click", e=>{ e.stopPropagation(); deleteCamera(btn.dataset.camdel); });
+  });
+  $("#camList").querySelectorAll("[data-camname]").forEach(nameEl=>{
+    nameEl.addEventListener("dblclick", e=>{ e.stopPropagation(); startRename(nameEl.dataset.camname); });
+  });
+  // Alt çöp kutusu: yalnızca aktif kamera ÖZELSE etkin (hazır açılar hiçbir yoldan silinemez)
   const cur = currentCameraDef();
-  $("#btnCamDelete").style.display = cur?.isCustom ? "" : "none";
+  $("#btnCamDeleteSel").disabled = !cur?.isCustom;
+  // Render sekmesindeki özel kamera listesini de tazele
+  if(typeof refreshRendCamPick === "function") refreshRendCamPick();
 }
 
 // Konum/hedef/near-far/FOV alanlarını CANLI kamera durumundan senkronlar — sürükle-döndür ile
@@ -1202,8 +1478,14 @@ function syncCameraFieldsFromLive(){
 function curSensorH(){ return +($("#camSensorPreset")?.value ? SENSOR_PRESETS[$("#camSensorPreset").value].h : 24); }
 
 $("#btnCamSaveNew").addEventListener("click", ()=> saveCurrentAsCamera(false));
-$("#btnCamDuplicate").addEventListener("click", ()=> duplicateCamera(activeCameraId));
-$("#btnCamDelete").addEventListener("click", ()=> deleteCamera(activeCameraId));
+$("#btnCamDeleteSel").addEventListener("click", ()=> deleteCamera(activeCameraId));
+$("#camAnimToggle").checked = camAnimEnabled;
+$("#camAnimToggle").addEventListener("change", e=>{
+  camAnimEnabled = e.target.checked;
+  localStorage.setItem("cs_cam_anim", camAnimEnabled ? "1" : "0");
+});
+// Kullanıcı viewport'a dokununca süren kamera animasyonunu iptal et
+renderer.domElement.addEventListener("pointerdown", ()=>{ camAnimToken++; });
 $("#btnCamReset").addEventListener("click", ()=>{
   const def = currentCameraDef();
   if(def && !def.isCustom){ frameActive(def.dir); }
@@ -1359,6 +1641,7 @@ function setActive(id){
   $("#btnExport").disabled = false;
   $("#btnSaveModelLib").disabled = false;
   $("#btnCropRender").disabled = false;
+  $("#btnMatExport").disabled = false;
   renderItemList();
   rebuildMaterialTab();
   frameActive();
@@ -1381,7 +1664,7 @@ function removeItem(id){
       $("#vpEmpty").style.display = "flex";
       $("#ptName").textContent = "—"; $("#ptSub").textContent = "Sahne boş";
       $("#crumbName").textContent = "—";
-      $("#btnShot").disabled = true; $("#btnExport").disabled = true; $("#btnSaveModelLib").disabled = true; $("#btnCropRender").disabled = true;
+      $("#btnShot").disabled = true; $("#btnExport").disabled = true; $("#btnSaveModelLib").disabled = true; $("#btnCropRender").disabled = true; $("#btnMatExport").disabled = true;
       $("#tab-material").innerHTML = '<div class="empty-tab">Malzeme göstermek için bir model içe aktar.</div>';
       updateHud();
       detachGizmo(); // silinen obje gizmo'ya bağlıydı, sahne artık boş — sarkan referansı temizle
@@ -2444,7 +2727,23 @@ function wireSegTabs(segId, tabIds, display){
     tabIds.forEach(t=>{ $("#tab-"+t).style.display = (t===btn.dataset.tab)?display:"none"; });
   }));
 }
-wireSegTabs("#configSeg", ["material","light","camera","scene"], "block");
+wireSegTabs("#configSeg", ["material","light","camera","renderexport"], "block");
+
+/* Render & Export alt sekmeleri (Render / Model / Materyal) */
+$("#reSeg").querySelectorAll("button").forEach(btn=>btn.addEventListener("click", ()=>{
+  $("#reSeg").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  ["render","modelexp","matexp"].forEach(t=>{ $("#retab-"+t).style.display = (t===btn.dataset.retab)?"block":"none"; });
+}));
+
+/* Katlanabilir bölümler — sağ paneldeki slot başlıkları tıklanınca içerik açılır/kapanır.
+   Delegasyonla: Malzeme sekmesi gibi dinamik yeniden kurulan bölümlerde de çalışsın. */
+document.querySelector(".config-body").addEventListener("click", (e)=>{
+  const head = e.target.closest(".slot-head");
+  if(!head || !head.parentElement.classList.contains("slot")) return;
+  if(e.target.closest("button,input,select,a,label")) return; // başlıktaki etkileşimli öğeler katlamayı tetiklemesin
+  head.parentElement.classList.toggle("collapsed");
+});
 
 $("#sceneSeg").querySelectorAll("button").forEach(btn=>btn.addEventListener("click", ()=>{
   $("#sceneSeg").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
@@ -2691,16 +2990,314 @@ $("#btnCaptureGo").addEventListener("click", ()=>{
   capturePop.style.display = "none";
   captureToRender();
 });
-$("#btnExport").addEventListener("click", ()=>{
+
+/* ================= Render & Export: yüksek çözünürlüklü render motoru =================
+   Viewport'tan bağımsız bir çözünürlükte tek kare çizer: renderer/composer geçici olarak
+   hedef boyuta (SSAA dahil) alınır, kamera aspect'i uyarlanır, arka plan modu uygulanır,
+   kare 2D canvas'a kopyalanıp (SSAA'da küçültülerek) geri yüklenir. preserveDrawingBuffer
+   kapalı olduğundan kopyalama render ile aynı görevde yapılır. */
+function renderHighRes(opts){ // {w,h,bg,bgColor,ssaa} → {canvas} | null
+  const maxTex = renderer.capabilities.maxTextureSize;
+  let W = opts.w * opts.ssaa, H = opts.h * opts.ssaa;
+  if(W > maxTex || H > maxTex){
+    const k = Math.min(maxTex / W, maxTex / H);
+    W = Math.floor(W * k); H = Math.floor(H * k);
+    toast(`GPU doku sınırı: render ${W}×${H} (iç) boyutuna düşürüldü.`, true);
+  }
+  const vw = host.clientWidth, vh = host.clientHeight;
+  const prWas = renderer.getPixelRatio();
+  const gizmoWasVisible = transformGizmoObj.visible;
+  const bgWas = scene.background;
+  const aspect = W / H;
+  const orthoFrustum = camera.isPerspectiveCamera ? null :
+    { left: camera.left, right: camera.right, top: camera.top, bottom: camera.bottom };
+  try{
+    // Arka plan modu
+    if(opts.bg === "transparent") scene.background = null;
+    else if(opts.bg === "solid") scene.background = new THREE.Color(opts.bgColor || "#ffffff");
+    else if(opts.bg === "studio") scene.background = null; // degrade aşağıda 2D kompozit
+    else if(opts.bg === "hdri"){
+      const cached = curHdriId ? hdriCache.get(curHdriId) : null;
+      if(cached) scene.background = cached.equirect;
+      else toast("Yüklü HDRI yok — mevcut arka planla render alındı.", true);
+    } // "current": olduğu gibi bırak
+    // Kamera aspect'i hedef orana uyarla
+    if(camera.isPerspectiveCamera){ camera.aspect = aspect; }
+    else{
+      const halfH = (camera.top - camera.bottom) / 2 || 1;
+      camera.left = -halfH * aspect; camera.right = halfH * aspect;
+    }
+    camera.updateProjectionMatrix();
+    transformGizmoObj.visible = false;
+    renderer.setPixelRatio(1); renderer.setSize(W, H, false);
+    composer.setPixelRatio(1); composer.setSize(W, H);
+    composer.render();
+    const out = document.createElement("canvas");
+    out.width = opts.w; out.height = opts.h;
+    const ctx = out.getContext("2d");
+    const needGradient = (opts.bg === "studio") || (opts.bg === "current" && !bgWas) ||
+                         (opts.bg === "hdri" && !scene.background);
+    if(needGradient && opts.bg !== "transparent"){
+      const L = LIGHTS.find(l=>l.id===curLight);
+      const rad = Math.max(out.width, out.height) * 1.1;
+      const g = ctx.createRadialGradient(out.width/2, -out.height*0.1, 0, out.width/2, -out.height*0.1, rad);
+      g.addColorStop(0, L.bg[0]); g.addColorStop(0.78, L.bg[1]); g.addColorStop(1, L.bg[1]);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, out.width, out.height);
+    }
+    ctx.drawImage(renderer.domElement, 0, 0, W, H, 0, 0, out.width, out.height);
+    return { canvas: out };
+  }catch(err){
+    console.error(err);
+    toast("Render alınamadı: " + err.message, true);
+    return null;
+  }finally{
+    scene.background = bgWas;
+    transformGizmoObj.visible = gizmoWasVisible;
+    if(camera.isPerspectiveCamera){ camera.aspect = vw / vh; }
+    else if(orthoFrustum){ Object.assign(camera, orthoFrustum); }
+    camera.updateProjectionMatrix();
+    renderer.setPixelRatio(prWas); renderer.setSize(vw, vh, false);
+    composer.setPixelRatio(prWas); composer.setSize(vw, vh);
+    composer.render();
+  }
+}
+
+function canvasToDownload(canvas, format, quality, fileBase){
+  return new Promise(resolve=>{
+    canvas.toBlob(blob=>{
+      if(!blob){ toast("Görüntü kodlanamadı.", true); resolve(false); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const ext = format === "jpeg" ? "jpg" : format;
+      a.href = url; a.download = fileBase.replace(/[^\w\-]+/g, "_") + "." + ext;
+      a.click();
+      URL.revokeObjectURL(url);
+      resolve(true);
+    }, "image/" + format, format === "png" ? undefined : quality);
+  });
+}
+
+/* --- Render sekmesi kontrolleri --- */
+$("#rendResPreset").addEventListener("change", ()=>{
+  const v = $("#rendResPreset").value;
+  if(v === "custom") return;
+  const [w, h] = v.split("x").map(Number);
+  $("#rendW").value = w; $("#rendH").value = h;
+});
+let rendAspect = 1920 / 1080;
+$("#rendW").addEventListener("input", ()=>{
+  $("#rendResPreset").value = "custom";
+  if($("#rendAspectLock").checked) $("#rendH").value = Math.max(16, Math.round((+$("#rendW").value || 16) / rendAspect));
+});
+$("#rendH").addEventListener("input", ()=>{
+  $("#rendResPreset").value = "custom";
+  if($("#rendAspectLock").checked) $("#rendW").value = Math.max(16, Math.round((+$("#rendH").value || 16) * rendAspect));
+});
+$("#rendAspectLock").addEventListener("change", ()=>{
+  if($("#rendAspectLock").checked) rendAspect = (+$("#rendW").value || 16) / (+$("#rendH").value || 16);
+});
+$("#rendFormat").addEventListener("change", ()=>{
+  $("#rendQualityWrap").style.display = $("#rendFormat").value === "png" ? "none" : "block";
+});
+$("#rendQuality").addEventListener("input", ()=>{ $("#rendQualityVal").textContent = $("#rendQuality").value; });
+$("#rendBg").addEventListener("change", ()=>{
+  $("#rendBgColorWrap").style.display = $("#rendBg").value === "solid" ? "block" : "none";
+});
+$("#rendCamMode").addEventListener("change", ()=>{
+  const mode = $("#rendCamMode").value;
+  $("#rendCamPick").style.display = mode === "custom" ? "block" : "none";
+  $("#btnRenderGo").textContent = mode === "all" ? "🎬 Tüm Kameraları Render Et" : "🎬 Render Al";
+  refreshRendCamPick();
+});
+function refreshRendCamPick(){
+  const customs = CAMERAS.filter(c=>c.isCustom);
+  $("#rendCamPick").innerHTML = customs.length
+    ? customs.map(c=>`<option value="${c.id}">${c.name}</option>`).join("")
+    : '<option value="">— özel kamera yok —</option>';
+}
+
+function setRenderProgress(done, total, label){
+  const wrap = $("#rendProgress");
+  if(done >= total){ wrap.style.display = "none"; return; }
+  wrap.style.display = "block";
+  $("#rendProgressFill").style.width = Math.round(100 * done / total) + "%";
+  $("#rendProgressText").textContent = label;
+}
+const nextFrame = () => new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+
+$("#btnRenderGo").addEventListener("click", async ()=>{
+  const item = items.find(i=>i.id===activeId);
+  if(!item){ toast("Sahnede model yok.", true); return; }
+  const w = Math.max(16, Math.min(16384, Math.round(+$("#rendW").value || 1920)));
+  const h = Math.max(16, Math.min(16384, Math.round(+$("#rendH").value || 1080)));
+  const base = {
+    w, h,
+    bg: $("#rendBg").value, bgColor: $("#rendBgColor").value,
+    ssaa: +$("#rendSsaa").value || 1,
+  };
+  const format = $("#rendFormat").value;
+  const quality = (+$("#rendQuality").value) / 100;
+  const itemName = (item.isSample ? "Atlas Lounge Chair" : item.name).replace(/\.[^.]+$/, "");
+  // Gölge kalitesi (render süresince — sonra eski değere döner)
+  const shadowQ = +$("#rendShadowQ").value;
+  const shadowWas = keyLight.shadow.mapSize.x;
+  const setShadow = (n)=>{ keyLight.shadow.mapSize.set(n, n); if(keyLight.shadow.map){ keyLight.shadow.map.dispose(); keyLight.shadow.map = null; } };
+  const mode = $("#rendCamMode").value;
+  const btn = $("#btnRenderGo");
+  btn.disabled = true;
+  try{
+    setShadow(shadowQ);
+    if(mode === "all"){
+      const customs = CAMERAS.filter(c=>c.isCustom);
+      if(!customs.length){ toast("Kayıtlı özel kamera yok — önce '+ Kamera Ekle' ile kamera kaydet.", true); return; }
+      const startCamId = activeCameraId;
+      for(let i = 0; i < customs.length; i++){
+        setRenderProgress(i, customs.length, `Render ${i+1}/${customs.length}: ${customs[i].name}`);
+        await nextFrame();
+        applyCameraDef(customs[i], {noAnim:true});
+        const res = renderHighRes(base);
+        if(res) await canvasToDownload(res.canvas, format, quality, `${itemName}_${customs[i].name}_${w}x${h}`);
+      }
+      setRenderProgress(customs.length, customs.length, "");
+      const startDef = CAMERAS.find(c=>c.id===startCamId);
+      if(startDef) applyCameraDef(startDef, {noAnim:true});
+      toast(`${customs.length} kamera render edildi (${w}×${h}).`);
+    }else{
+      if(mode === "custom"){
+        const def = CAMERAS.find(c=>c.id===$("#rendCamPick").value);
+        if(!def){ toast("Önce bir özel kamera kaydet ve seç.", true); return; }
+        applyCameraDef(def, {noAnim:true});
+      }
+      setRenderProgress(0, 1, "Render alınıyor…");
+      await nextFrame();
+      const res = renderHighRes(base);
+      setRenderProgress(1, 1, "");
+      if(res){
+        const camName = currentCameraDef()?.name || "Viewport";
+        await canvasToDownload(res.canvas, format, quality, `${itemName}_${camName}_${w}x${h}`);
+        toast(`Render indirildi (${w}×${h}).`);
+      }
+    }
+  }finally{
+    setShadow(shadowWas);
+    composer.render();
+    btn.disabled = false;
+    setRenderProgress(1, 1, "");
+  }
+});
+/* ---- Model dışa aktarma: GLB / GLTF / OBJ / USDZ ----
+   Kapsam "Tüm objeler" ya da format OBJ/USDZ ise gruplar geçici bir sahneye KLONLANIR
+   (three.js'te bir nesnenin tek ebeveyni olabilir — orijinal sahne bozulmasın diye).
+   Not: three.js'in FBX exporter'ı yok; FBX bu yüzden sunulmuyor. */
+function downloadBlob(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+$("#btnExport").addEventListener("click", async ()=>{
   const item = items.find(i=>i.id===activeId); if(!item) return;
-  exporter.parse(item.group, (result)=>{
-    const blob = new Blob([result], {type:"application/octet-stream"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href=url;
-    a.download = (item.name.replace(/\.[^.]+$/,'') || "model") + "_duzenlendi.glb"; a.click();
-    URL.revokeObjectURL(url);
-    toast("GLB dışa aktarıldı.");
-  }, (err)=>{ toast("Dışa aktarma hatası.", true); console.error(err); }, {binary:true});
+  const fmt = $("#expFormat").value;           // glb | gltf | obj | usdz
+  const scope = $("#expScope").value;          // active | all
+  const withTex = $("#expTextures").checked;
+  const baseName = (scope === "all" && items.length > 1)
+    ? "sahne" : (item.name.replace(/\.[^.]+$/, "") || "model");
+  const sources = scope === "all" ? items.map(i=>i.group) : [item.group];
+  try{
+    if(fmt === "glb" || fmt === "gltf"){
+      const input = sources.length === 1 ? sources[0] : sources;
+      exporter.parse(input, (result)=>{
+        if(fmt === "glb"){
+          downloadBlob(new Blob([result], {type:"application/octet-stream"}), baseName + "_duzenlendi.glb");
+        }else{
+          downloadBlob(new Blob([JSON.stringify(result, null, 1)], {type:"model/gltf+json"}), baseName + "_duzenlendi.gltf");
+        }
+        toast(fmt.toUpperCase() + " dışa aktarıldı.");
+      }, (err)=>{ toast("Dışa aktarma hatası.", true); console.error(err); },
+      { binary: fmt === "glb", embedImages: withTex });
+    }else{
+      // OBJ/USDZ exporter'ları tek kök nesne ister — klonları geçici sahnede topla
+      const tmp = new THREE.Scene();
+      sources.forEach(g=>tmp.add(g.clone(true)));
+      if(fmt === "obj"){
+        const { OBJExporter } = await import('three/addons/exporters/OBJExporter.js');
+        const text = new OBJExporter().parse(tmp);
+        downloadBlob(new Blob([text], {type:"text/plain"}), baseName + "_duzenlendi.obj");
+        toast("OBJ dışa aktarıldı (geometri — malzemeler OBJ'de taşınmaz).");
+      }else{
+        const { USDZExporter } = await import('three/addons/exporters/USDZExporter.js');
+        const data = await new USDZExporter().parseAsync(tmp);
+        downloadBlob(new Blob([data], {type:"model/vnd.usdz+zip"}), baseName + "_duzenlendi.usdz");
+        toast("USDZ dışa aktarıldı.");
+      }
+    }
+  }catch(err){
+    toast("Dışa aktarma hatası: " + err.message, true);
+    console.error(err);
+  }
+});
+
+/* ---- Materyal haritalarını ZIP olarak dışa aktar ----
+   Aktif objenin malzemelerindeki seçili haritalar hedef çözünürlüğe ölçeklenip
+   <Malzeme>/<Harita>.png olarak paketlenir. DirectX seçilirse normal map'in yeşil
+   kanalı ters çevrilir. JSZip yalnızca ihtiyaç anında CDN'den yüklenir. */
+const MEXP_SLOTS = [
+  ["map", "BaseColor"], ["roughnessMap", "Roughness"], ["normalMap", "Normal"],
+  ["displacementMap", "Height"], ["aoMap", "AO"], ["metalnessMap", "Metallic"],
+  ["alphaMap", "Opacity"], ["emissiveMap", "Emissive"],
+];
+$("#btnMatExport").addEventListener("click", async ()=>{
+  const item = items.find(i=>i.id===activeId);
+  if(!item){ toast("Sahnede model yok.", true); return; }
+  const wanted = new Set([...document.querySelectorAll('[data-mexp]')].filter(c=>c.checked).map(c=>c.dataset.mexp));
+  if(!wanted.size){ toast("En az bir harita türü seç.", true); return; }
+  const res = Math.min(+$("#mexpRes").value || 2048, renderer.capabilities.maxTextureSize);
+  const directx = $("#mexpNormal").value === "directx";
+  const mats = new Map();
+  item.group.traverse(o=>{
+    if(o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m=>{ if(m) mats.set(m.uuid, m); });
+  });
+  const btn = $("#btnMatExport");
+  btn.disabled = true;
+  try{
+    const { default: JSZip } = await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm');
+    const zip = new JSZip();
+    let count = 0, matIdx = 0;
+    for(const m of mats.values()){
+      matIdx++;
+      const matName = (m.name || ("Malzeme_" + String(matIdx).padStart(2, "0"))).replace(/[^\w\- ]+/g, "_");
+      for(const [slot, label] of MEXP_SLOTS){
+        if(!wanted.has(slot)) continue;
+        const tex = m[slot];
+        const img = tex && tex.image;
+        if(!img || !(img.width > 0)) continue; // harita yok ya da çizilebilir değil (ör. sıkıştırılmış KTX)
+        const ar = img.width / img.height;
+        const cw = ar >= 1 ? res : Math.round(res * ar);
+        const ch = ar >= 1 ? Math.round(res / ar) : res;
+        const c = document.createElement("canvas"); c.width = cw; c.height = ch;
+        const ctx = c.getContext("2d");
+        try{ ctx.drawImage(img, 0, 0, cw, ch); }catch{ continue; }
+        if(slot === "normalMap" && directx){
+          const d = ctx.getImageData(0, 0, cw, ch);
+          for(let i = 1; i < d.data.length; i += 4) d.data[i] = 255 - d.data[i]; // G kanalını çevir
+          ctx.putImageData(d, 0, 0);
+        }
+        const blob = await new Promise(r=>c.toBlob(r, "image/png"));
+        if(!blob) continue;
+        zip.file(`${matName}/${label}.png`, blob);
+        count++;
+      }
+    }
+    if(!count){ toast("Seçilen türlerde dışa aktarılabilir harita bulunamadı.", true); return; }
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const baseName = (item.isSample ? "Atlas_Lounge_Chair" : item.name.replace(/\.[^.]+$/, "")).replace(/[^\w\-]+/g, "_");
+    downloadBlob(zipBlob, `${baseName}_materyaller_${res}px.zip`);
+    toast(`${count} harita ZIP olarak indirildi.`);
+  }catch(err){
+    toast("Materyal dışa aktarma hatası: " + err.message, true);
+    console.error(err);
+  }finally{
+    btn.disabled = false;
+  }
 });
 
 /* ---------------- Materyal/Model Kütüphanesinden içe aktarma ----------------
