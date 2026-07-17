@@ -385,6 +385,15 @@
   [data-theme="warm"] .hdri-btn.on{ border-color:var(--ink) }
   [data-theme="warm"] .hdri-btn.has-thumb.on::after{ box-shadow:0 0 0 2px var(--ink) inset }
 
+  /* Uygulama içi diyalog (onay/girdi) */
+  .modal-backdrop{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+  .modal{background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;width:min(340px, calc(100vw - 40px));box-shadow:var(--shadow-float);display:flex;flex-direction:column;gap:14px;animation:tabIn .2s ease}
+  .modal-msg{font-size:12.5px;line-height:1.55;color:var(--ink);white-space:pre-line}
+  .modal input{font-size:12px;font-weight:600;padding:8px 10px;border-radius:var(--r-sm);border:1px solid var(--line2);background:var(--panel2);color:var(--ink)}
+  .modal input:focus{outline:none;border-color:var(--accent)}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end}
+  .modal-actions .btn.danger-ok{background:var(--err);border-color:transparent;color:#fff}
+
   /* Dar ekranlar: paneller viewport'u taşmasın */
   @media (max-width:760px){
     .config{width:min(320px, calc(100vw - 24px))}
@@ -846,6 +855,19 @@
   </div>
 </div>
 
+<!-- Uygulama içi onay/girdi diyaloğu — native confirm()/prompt() Chrome'un --app (masaüstü
+     kısayolu) modunda sessizce bastırılabildiği için kullanılmıyor. -->
+<div class="modal-backdrop" id="csModal" style="display:none">
+  <div class="modal">
+    <div class="modal-msg" id="csModalMsg"></div>
+    <input type="text" id="csModalInput" style="display:none">
+    <div class="modal-actions">
+      <button class="btn" id="csModalCancel">Vazgeç</button>
+      <button class="btn primary" id="csModalOk">Tamam</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script type="importmap">
@@ -879,6 +901,45 @@ function toast(msg, isErr){
   const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (isErr?" err":"");
   clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 3200);
 }
+
+/* Uygulama içi onay/girdi diyaloğu — native confirm()/prompt() Chrome'un --app modunda
+   (masaüstü kısayolu) sessizce bastırılıp anında false/null dönebildiği için tüm onay ve
+   ad girme akışları bu Promise tabanlı modalı kullanır. */
+function csDialog({ message, input = null, okText = "Tamam", danger = false }){
+  return new Promise(resolve=>{
+    const bd = $("#csModal"), inp = $("#csModalInput"), ok = $("#csModalOk"), cancel = $("#csModalCancel");
+    $("#csModalMsg").textContent = message;
+    ok.textContent = okText;
+    ok.classList.toggle("danger-ok", !!danger);
+    const isPrompt = input !== null;
+    inp.style.display = isPrompt ? "block" : "none";
+    if(isPrompt) inp.value = input;
+    bd.style.display = "flex";
+    (isPrompt ? inp : ok).focus();
+    if(isPrompt) inp.select();
+    const close = (result)=>{
+      bd.style.display = "none";
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+      bd.removeEventListener("click", onBackdrop);
+      bd.removeEventListener("keydown", onKey);
+      resolve(result);
+    };
+    const onOk = ()=> close(isPrompt ? inp.value : true);
+    const onCancel = ()=> close(isPrompt ? null : false);
+    const onBackdrop = (e)=>{ if(e.target === bd) onCancel(); };
+    const onKey = (e)=>{
+      if(e.key === "Enter"){ e.preventDefault(); onOk(); }
+      else if(e.key === "Escape"){ e.stopPropagation(); onCancel(); }
+    };
+    ok.addEventListener("click", onOk);
+    cancel.addEventListener("click", onCancel);
+    bd.addEventListener("click", onBackdrop);
+    bd.addEventListener("keydown", onKey);
+  });
+}
+const csConfirm = (message, opts) => csDialog({ message, ...(opts || {}) });
+const csPrompt = (message, defaultValue = "") => csDialog({ message, input: defaultValue });
 
 /* ---- Kütüphane sayfalarına geçişte editör sekmesinin sıfırlanmasını önle ----
    Bu sekmeden Materyal/Model Kütüphanesi linkleri artık target="csMaterialLib"/"csModelLib"
@@ -1359,11 +1420,15 @@ function duplicateCamera(id){
   applyCameraDef(copy);
   toast("Kamera çoğaltıldı: " + copy.name);
 }
-function deleteCamera(id){
+async function deleteCamera(id){
+  const cam = CAMERAS.find(c=>c.id===id);
+  if(!cam) return;
+  if(!cam.isCustom){ toast("Hazır kamera açıları silinemez.", true); return; }
+  const onay = await csConfirm("Seçili kamerayı silmek istediğinize emin misiniz?\n\n" + cam.name, { okText: "Sil", danger: true });
+  if(!onay) return;
+  // Onay beklerken liste değişmiş olabilir — index'i şimdi bul
   const idx = CAMERAS.findIndex(c=>c.id===id);
-  if(idx<0) return;
-  if(!CAMERAS[idx].isCustom){ toast("Hazır kamera açıları silinemez.", true); return; }
-  if(!confirm("Seçili kamerayı silmek istediğinize emin misiniz?\n\n" + CAMERAS[idx].name)) return;
+  if(idx < 0) return;
   const wasActive = activeCameraId===id;
   CAMERAS.splice(idx,1);
   if(wasActive && CAMERAS.length) applyCameraDef(CAMERAS[0], {noAnim:true});
@@ -2480,7 +2545,7 @@ function textureToBlob(tex){
 }
 
 async function saveMaterialToLibrary(mat){
-  const name = prompt("Materyal Kütüphanesine kaydedilecek ad:", mat.name || "Materyal");
+  const name = await csPrompt("Materyal Kütüphanesine kaydedilecek ad:", mat.name || "Materyal");
   if(!name) return;
   try{
     const rec = blankMaterial();
@@ -2512,11 +2577,11 @@ function countGeometry(object3D){
   return { verts: Math.round(verts), tris: Math.round(tris) };
 }
 
-$("#btnSaveModelLib").addEventListener("click", ()=>{
+$("#btnSaveModelLib").addEventListener("click", async ()=>{
   const item = items.find(i=>i.id===activeId);
   if(!item) return;
   const suggested = item.isSample ? "Atlas Lounge Chair" : item.name.replace(/\.[^.]+$/, "");
-  const name = prompt("Model Kütüphanesine kaydedilecek ad:", suggested);
+  const name = await csPrompt("Model Kütüphanesine kaydedilecek ad:", suggested);
   if(!name) return;
   exporter.parse(item.group, async (result)=>{
     try{
