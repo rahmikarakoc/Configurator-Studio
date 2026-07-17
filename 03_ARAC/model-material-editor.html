@@ -1597,6 +1597,9 @@ function addItem(name, object3D, isSample){
   items.push(item);
   setActive(id);
   renderItemList();
+  // Örnek obje modül değerlendirmesi sırasında eklenir (undo yığını henüz kurulmamış olabilir)
+  // ve zaten geri alınacak bir kullanıcı işlemi değildir.
+  if(!isSample) pushUndo(makeItemCmd(item, "İçe aktarma: " + name, true));
   return item;
 }
 
@@ -1690,7 +1693,14 @@ function renderItemList(){
     row.addEventListener("click", e=>{ if(e.target.closest("[data-del],[data-vis],[data-lock],[data-dup],[data-name]")) return; setActive(row.dataset.id); });
   });
   el.querySelectorAll("[data-del]").forEach(btn=>{
-    btn.addEventListener("click", e=>{ e.stopPropagation(); removeItem(btn.dataset.del); });
+    btn.addEventListener("click", e=>{
+      e.stopPropagation();
+      const it = items.find(i=>i.id===btn.dataset.del);
+      if(!it) return;
+      const cmd = makeItemCmd(it, "Silme: " + (it.isSample ? "Atlas Lounge Chair" : it.name), false);
+      cmd.redo(); // silmeyi uygula (redo = sil)
+      pushUndo(cmd);
+    });
   });
   el.querySelectorAll("[data-vis]").forEach(btn=>{
     btn.addEventListener("click", e=>{
@@ -1752,6 +1762,7 @@ function duplicateItem(id){
   items.push(item);
   setActive(newId);
   renderItemList();
+  pushUndo(makeItemCmd(item, "Çoğaltma: " + item.name, true));
   toast("Obje çoğaltıldı.");
 }
 
@@ -1854,9 +1865,16 @@ function syncMirrorButtonsFromActive(){
   $("#btnMirrorY").classList.toggle("on", !!item && item.mirror.y < 0);
   $("#btnMirrorZ").classList.toggle("on", !!item && item.mirror.z < 0);
 }
-$("#btnMirrorX").addEventListener("click", ()=> toggleMirror("x"));
-$("#btnMirrorY").addEventListener("click", ()=> toggleMirror("y"));
-$("#btnMirrorZ").addEventListener("click", ()=> toggleMirror("z"));
+function mirrorWithUndo(axis){
+  const item = items.find(i=>i.id===activeId);
+  if(!item || item.locked){ toggleMirror(axis); return; } // hata toast'ını toggleMirror versin
+  const before = snapTransform(item);
+  toggleMirror(axis);
+  pushTransformUndo(item.id, before, snapTransform(item), "Aynalama (" + axis.toUpperCase() + ")");
+}
+$("#btnMirrorX").addEventListener("click", ()=> mirrorWithUndo("x"));
+$("#btnMirrorY").addEventListener("click", ()=> mirrorWithUndo("y"));
+$("#btnMirrorZ").addEventListener("click", ()=> mirrorWithUndo("z"));
 
 $("#gizmoMove").addEventListener("click", ()=> toggleGizmoMode("translate"));
 $("#gizmoRotate").addEventListener("click", ()=> toggleGizmoMode("rotate"));
@@ -1866,11 +1884,112 @@ $("#gizmoRotateL").addEventListener("click", ()=> toggleGizmoMode("rotate"));
 $("#gizmoScaleL").addEventListener("click", ()=> toggleGizmoMode("scale"));
 $("#gizmoSnap").addEventListener("change", e=>{ snapOn = e.target.checked; applySnapSettings(); });
 
+/* ================= Geri Al / Yinele (Ctrl+Z / Ctrl+Shift+Z veya Ctrl+Y) =================
+   Komut yığını: her komut {label, undo(), redo()} taşır. Kapsam — obje dönüşümleri
+   (gizmo sürükleme, sayısal alanlar, ölçek kaydırıcısı, aynalama) ve sahne işlemleri
+   (içe aktarma, çoğaltma, silme). Malzeme düzenlemeleri henüz kapsam dışı. */
+const undoStack = [], redoStack = [];
+const UNDO_LIMIT = 60;
+function pushUndo(cmd){
+  undoStack.push(cmd);
+  if(undoStack.length > UNDO_LIMIT) undoStack.shift();
+  redoStack.length = 0; // yeni işlem yinele geçmişini geçersiz kılar
+}
+function doUndo(){
+  const c = undoStack.pop();
+  if(!c){ toast("Geri alınacak işlem yok."); return; }
+  c.undo(); redoStack.push(c);
+  toast("↩ Geri alındı: " + c.label);
+}
+function doRedo(){
+  const c = redoStack.pop();
+  if(!c){ toast("Yinelenecek işlem yok."); return; }
+  c.redo(); undoStack.push(c);
+  toast("↪ Yinelendi: " + c.label);
+}
+
+/* Dönüşüm anlık görüntüsü — konum/rotasyon/ölçek + userScale/mirror birlikte saklanır */
+function snapTransform(item){
+  return {
+    pos: item.group.position.clone(), quat: item.group.quaternion.clone(), scale: item.group.scale.clone(),
+    userScale: item.userScale, mirror: { ...item.mirror },
+  };
+}
+function applyTransformSnap(item, s){
+  item.group.position.copy(s.pos);
+  item.group.quaternion.copy(s.quat);
+  item.group.scale.copy(s.scale);
+  item.userScale = s.userScale;
+  item.mirror = { ...s.mirror };
+  if(item.id === activeId){
+    syncTransformFieldsFromActive();
+    $("#scaleRange").value = Math.round(item.userScale * 100);
+    $("#scaleVal").textContent = item.userScale.toFixed(2) + "×";
+  }
+  if(typeof refreshShadowForActive === "function") refreshShadowForActive();
+}
+function pushTransformUndo(itemId, before, after, label){
+  if(before.pos.equals(after.pos) && before.quat.equals(after.quat) && before.scale.equals(after.scale)) return;
+  pushUndo({
+    label,
+    undo(){ const it = items.find(i=>i.id===itemId); if(it) applyTransformSnap(it, before); },
+    redo(){ const it = items.find(i=>i.id===itemId); if(it) applyTransformSnap(it, after); },
+  });
+}
+
+/* Sahne işlemi komutu: ekleme (isAdd=true) ya da silme (isAdd=false) tek yerden */
+function makeItemCmd(item, label, isAdd){
+  let idx = items.indexOf(item);
+  const removeIt = ()=>{ idx = items.findIndex(i=>i.id===item.id); removeItem(item.id); };
+  const addIt = ()=>{
+    items.splice(Math.min(Math.max(idx, 0), items.length), 0, item);
+    if(!item.group.parent) scene.add(item.group);
+    item.group.visible = item.visible !== false;
+    setActive(item.id);
+  };
+  return isAdd ? { label, undo: removeIt, redo: addIt } : { label, undo: addIt, redo: removeIt };
+}
+
+/* Gizmo sürüklemesi: sürükleme başında anlık görüntü, bitişinde komut */
+let gizmoDragSnap = null;
+transformControls.addEventListener("dragging-changed", e=>{
+  const item = items.find(i=>i.id===activeId);
+  if(!item) return;
+  if(e.value){ gizmoDragSnap = snapTransform(item); }
+  else if(gizmoDragSnap){
+    pushTransformUndo(item.id, gizmoDragSnap, snapTransform(item),
+      gizmoMode === "rotate" ? "Döndürme" : gizmoMode === "scale" ? "Ölçekleme" : "Taşıma");
+    gizmoDragSnap = null;
+  }
+});
+
+/* Sayısal alanlar + ölçek kaydırıcısı: odak/basışta anlık görüntü, değişiklik bitince komut */
+function wireTransformUndo(el, label){
+  let snap = null;
+  const start = ()=>{ const it = items.find(i=>i.id===activeId); if(it && !snap) snap = snapTransform(it); };
+  el.addEventListener("focus", start);
+  el.addEventListener("pointerdown", start);
+  el.addEventListener("change", ()=>{
+    const it = items.find(i=>i.id===activeId);
+    if(it && snap) pushTransformUndo(it.id, snap, snapTransform(it), label);
+    snap = null;
+  });
+}
+["objPosX","objPosY","objPosZ"].forEach(id=> wireTransformUndo($("#"+id), "Konum düzenleme"));
+["objRotX","objRotY","objRotZ"].forEach(id=> wireTransformUndo($("#"+id), "Rotasyon düzenleme"));
+wireTransformUndo($("#scaleRange"), "Ölçekleme");
+
 // W/E/R kısayolları — yazı alanlarında (input/textarea/select) tetiklenmesin diye korunuyor.
 document.addEventListener("keydown", e=>{
   const tag = document.activeElement?.tagName;
   if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-  if(e.metaKey || e.ctrlKey || e.altKey) return;
+  if((e.ctrlKey || e.metaKey) && !e.altKey){
+    const k = e.key.toLowerCase();
+    if(k === "z"){ e.preventDefault(); if(e.shiftKey) doRedo(); else doUndo(); }
+    else if(k === "y"){ e.preventDefault(); doRedo(); }
+    return;
+  }
+  if(e.altKey) return;
   if(e.key === "w" || e.key === "W") setGizmoMode("translate");
   else if(e.key === "e" || e.key === "E") setGizmoMode("rotate");
   else if(e.key === "r" || e.key === "R") setGizmoMode("scale");
