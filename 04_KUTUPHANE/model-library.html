@@ -145,9 +145,10 @@
   <div class="topbar">
     <div class="brand"><span class="mark"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="16" width="20" height="20" rx="6" fill="var(--orange)" transform="rotate(-10 20 26)"/><rect x="15" y="11" width="20" height="20" rx="6" fill="var(--blue)" transform="rotate(6 25 21)"/><rect x="13" y="18" width="20" height="20" rx="6" fill="var(--pink)" transform="rotate(-2 23 28)"/></svg></span>Configurator Studio</div>
     <nav class="nav">
-      <a href="../03_ARAC/model-material-editor.html" data-nav="editor">Editör</a>
+      <a href="../03_ARAC/model-material-editor.html" data-nav="editor" id="navEditor" target="csEditor">Editör</a>
       <a href="material-library.html" data-nav="materials">Materyal Kütüphanesi</a>
       <a href="model-library.html" data-nav="models" class="on">Model Kütüphanesi</a>
+      <a href="../05_RENDER/render.html" data-nav="render" id="navRender" target="csRender">Render</a>
     </nav>
     <div class="spacer"></div>
     <button class="btn primary" id="btnNew">+ Yeni Model</button>
@@ -239,11 +240,26 @@ function toast(msg, isErr){
   clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 3000);
 }
 
-/* ---- Editöre gönder — localStorage üzerinden "beklemede" işareti bırakıp yönlendirir. ---- */
+/* ---- Editöre gönder — localStorage üzerinden "beklemede" işareti bırakıp editör sekmesine
+   yönlendirir. window.location.href veya window.open() KULLANMIYORUZ: window.open() popup
+   engelleyiciye takılabiliyor (script çağrısı sayılıyor), ama target="..." ile gerçek bir <a>
+   tıklaması ASLA engellenmiyor. Görünmez bir link oluşturup tıklatıyoruz — bu sekmeyi editöre
+   çevirmek yerine "csEditor" adlı sekmeyi bulur/açar, bu kütüphane sekmesi olduğu gibi kalır. ---- */
 function sendToEditor(type, id){
   localStorage.setItem("cs_pending_import", JSON.stringify({ type, id }));
-  window.location.href = "../03_ARAC/model-material-editor.html";
+  const a = document.createElement("a");
+  a.href = "../03_ARAC/model-material-editor.html";
+  a.target = "csEditor";
+  a.click();
 }
+
+/* ---- "Editör" sekmesine geçiş — bu sekme editör tarafından açıldıysa (window.opener) sadece
+   ona odaklan (sıfır navigasyon, editördeki sahne/kamera durumu korunur); değilse linkin kendi
+   target="csEditor" özelliği devreye girer (adıyla bul/aç). ---- */
+$("#navEditor").addEventListener("click", e=>{
+  if(window.opener && !window.opener.closed){ e.preventDefault(); window.opener.focus(); }
+});
+window.name = window.name || "csModelLib";
 
 /* ---- Tema geçişi (koyu/açık/sıcak) — editördeki seçimle aynı localStorage anahtarını paylaşır ---- */
 const THEME_ORDER = ["dark", "light", "warm"];

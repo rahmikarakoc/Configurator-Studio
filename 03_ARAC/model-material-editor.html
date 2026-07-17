@@ -165,6 +165,12 @@
   .icon-btn.on{background:linear-gradient(135deg, var(--accent2), var(--accent));color:#fff}
   .icon-btn svg{width:15px;height:15px}
   .vp-zoom{position:absolute;right:16px;bottom:14px;display:flex;flex-direction:column;gap:2px;background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--r-pill);padding:4px;box-shadow:var(--shadow-float)}
+  /* Yakalama popover'ı — vp-toolbar'daki fotoğraf makinesi ikonunun altında açılır */
+  .vp-capture-pop{position:absolute;top:56px;left:50%;transform:translateX(-50%);z-index:40;display:flex;flex-direction:column;gap:10px;background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);border-radius:var(--r-md);padding:12px;box-shadow:var(--shadow-float);width:236px}
+  .vp-capture-pop .cap-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:11.5px;color:var(--dim);font-weight:700}
+  .vp-capture-pop .seg{margin:0;padding:3px;width:132px}
+  .vp-capture-pop label.chk{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--ink);font-weight:700;cursor:pointer}
+  .vp-capture-pop .btn{width:100%;justify-content:center}
   .vp-hud{position:absolute;left:16px;bottom:14px;display:flex;flex-direction:column;gap:4px;pointer-events:none}
   .hud-chip{font-family:var(--font-mono);font-size:10.5px;color:var(--ink);background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);padding:5px 9px;border-radius:var(--r-pill);width:fit-content}
 
@@ -218,8 +224,11 @@
   .size-grid label{display:flex;flex-direction:column;gap:3px}
   .size-grid input,.size-grid select{width:100%;font-size:11px;padding:5px 6px;border-radius:var(--r-sm);border:1px solid var(--line2);background:var(--panel2);color:var(--ink)}
 
-  /* Sol panel: ürün navigasyon (Dönüşüm) bölümü — Taşı/Döndür/Ölçekle mod butonları + Aynala */
-  .sp-transform{padding:14px 12px 16px;border-top:1px solid var(--line);overflow-y:auto;max-height:460px;flex:0 0 auto}
+  /* Sol panel: sağ paneldeki .seg ile aynı sekme dili — "Ürünler" (içe aktar + sahne hiyerarşisi)
+     ve "Dönüşüm" (Taşı/Döndür/Ölçekle mod butonları + Pos/Rot/Ölçek/Aynala) sekmeleri. */
+  .sp-tab{flex:1;min-height:0;overflow-y:auto;display:none;flex-direction:column}
+  .sp-tab.on{display:flex}
+  #tab-transform{padding:14px 12px 16px}
   .gizmo-mode-row{display:flex;gap:6px;justify-content:center;margin-bottom:12px}
   .gizmo-mode-row .icon-btn{border:1px solid var(--line2)}
   .mirror-row{display:flex;gap:6px;margin-top:8px}
@@ -307,6 +316,7 @@
   [data-theme="warm"] .vp-empty-card,
   [data-theme="warm"] .product-title,
   [data-theme="warm"] .vp-toolbar,
+  [data-theme="warm"] .vp-capture-pop,
   [data-theme="warm"] .vp-zoom,
   [data-theme="warm"] .hud-chip,
   [data-theme="warm"] .edge-tab,
@@ -337,8 +347,9 @@
     <div class="brand"><span class="mark"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="16" width="20" height="20" rx="6" fill="var(--orange)" transform="rotate(-10 20 26)"/><rect x="15" y="11" width="20" height="20" rx="6" fill="var(--blue)" transform="rotate(6 25 21)"/><rect x="13" y="18" width="20" height="20" rx="6" fill="var(--pink)" transform="rotate(-2 23 28)"/></svg></span>Model &amp; Malzeme Editörü</div>
     <nav class="nav">
       <a href="model-material-editor.html" class="on">Editör</a>
-      <a href="../04_KUTUPHANE/material-library.html">Materyal Kütüphanesi</a>
-      <a href="../04_KUTUPHANE/model-library.html">Model Kütüphanesi</a>
+      <a href="../04_KUTUPHANE/material-library.html" id="navMaterials" target="csMaterialLib">Materyal Kütüphanesi</a>
+      <a href="../04_KUTUPHANE/model-library.html" id="navModels" target="csModelLib">Model Kütüphanesi</a>
+      <a href="../05_RENDER/render.html" id="navRender" target="csRender">Render</a>
     </nav>
     <div class="crumb">Configurator Studio / <b id="crumbName">Örnek Obje</b></div>
     <div class="spacer"></div>
@@ -359,15 +370,22 @@
         <h2>Sahne</h2>
         <p>Kendi 3D modelini içe aktar, malzemelerini düzenle, düzenlenmiş halini geri dışa aktar.</p>
       </div>
-      <div class="import-drop" id="importDrop">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-        <b>Model İçe Aktar</b>
-        <span>.glb · .gltf · .obj</span>
+      <div class="seg" id="sceneSeg">
+        <button class="on" data-tab="products">Ürünler</button>
+        <button data-tab="transform">Dönüşüm</button>
       </div>
-      <input type="file" id="fileInput" accept=".glb,.gltf,.obj">
-      <div class="item-list" id="itemList"></div>
 
-      <div class="sp-transform" id="spTransform">
+      <div id="tab-products" class="sp-tab on">
+        <div class="import-drop" id="importDrop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          <b>Model İçe Aktar</b>
+          <span>.glb · .gltf · .obj</span>
+        </div>
+        <input type="file" id="fileInput" accept=".glb,.gltf,.obj">
+        <div class="item-list" id="itemList"></div>
+      </div>
+
+      <div id="tab-transform" class="sp-tab">
         <div class="slot" style="margin-bottom:14px">
           <div class="slot-head">Dönüşüm</div>
           <div class="gizmo-mode-row">
@@ -429,6 +447,22 @@
         <button class="icon-btn" id="uvToggle" title="UV Grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 8h18M3 13h18M8 3v18M13 3v18"/></svg></button>
         <button class="icon-btn" id="compareToggle" title="Öncesi/Sonrası karşılaştır"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M7 7H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3"/><path d="M17 7h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-3"/></svg></button>
         <button class="icon-btn" id="resetView" title="Görünümü sıfırla"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9"/><path d="M3 4v5h5"/></svg></button>
+        <button class="icon-btn" id="vpCaptureBtn" title="Görüntü Yakala (Render'da Kırp)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+      </div>
+
+      <!-- Yakalama ayarları popover'ı — vp-toolbar'daki fotoğraf makinesi ikonuyla açılır/kapanır.
+           Seçimler localStorage'da (cs_capture_opts) saklanır; Sahne sekmesindeki "Render'da Kırp"
+           butonu da aynı ayarları kullanır (ortak captureToRender). -->
+      <div class="vp-capture-pop" id="capturePop" style="display:none">
+        <div class="cap-row"><span>Çözünürlük</span>
+          <div class="seg" id="capScaleSeg">
+            <button data-scale="1">1×</button>
+            <button data-scale="2">2×</button>
+            <button data-scale="4">4×</button>
+          </div>
+        </div>
+        <label class="chk"><input type="checkbox" id="capTransparent"> Şeffaf arka plan</label>
+        <button class="btn primary" id="btnCaptureGo">📸 Yakala ve Render'da Aç</button>
       </div>
 
       <div class="vp-zoom">
@@ -447,7 +481,7 @@
       <button class="edge-tab" id="toggleConfig" title="Ayarlar panelini aç/kapat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 6-6 6 6 6"/></svg>
       </button>
-      <div class="seg">
+      <div class="seg" id="configSeg">
         <button class="on" data-tab="material">Malzeme</button>
         <button data-tab="light">Aydınlatma</button>
         <button data-tab="camera">Kamera</button>
@@ -623,6 +657,7 @@
             <div class="scene-tools">
               <button class="btn" id="btnSaveModelLib" disabled>💾 Modeli Kütüphaneye Kaydet</button>
               <button class="btn" id="btnShot" disabled>📷 Ekran Görüntüsü</button>
+              <button class="btn" id="btnCropRender" disabled>🖼 Render'da Kırp</button>
               <button class="btn primary" id="btnExport" disabled>⬇ GLB Dışa Aktar</button>
             </div>
           </div>
@@ -652,7 +687,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { generateAutoPBR, SURFACE_PRESETS } from './js/autopbr.js';
 import { ADJUST_SCHEMA, defaultParams, applyAdjust, applyNormalMaterialParams, applyHeightMaterialParams, debounce } from './js/map-adjust.js';
 import { getUVGridTexture } from './js/preview-objects.js';
-import { dbPut, dbGet, dbGetAll, blankMaterial, blankModel } from '../04_KUTUPHANE/js/db.js';
+import { dbPut, dbGet, dbGetAll, newId, blankMaterial, blankModel } from '../04_KUTUPHANE/js/db.js';
 import { EXRLoader } from 'three/addons/loaders/EXRLoader.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
@@ -665,6 +700,14 @@ function toast(msg, isErr){
   const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (isErr?" err":"");
   clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 3200);
 }
+
+/* ---- Kütüphane sayfalarına geçişte editör sekmesinin sıfırlanmasını önle ----
+   Bu sekmeden Materyal/Model Kütüphanesi linkleri artık target="csMaterialLib"/"csModelLib"
+   ile AYRI bir sekmede açılıyor (bkz. HTML) — normal <a target> navigasyonu popup engelleyiciye
+   takılmaz ve aynı isimdeki sekme zaten açıksa onu yeniden kullanır. Bu editör sekmesi hiç
+   dokunulmadan kalır, dolayısıyla sahne/kamera/HDRI durumu kaybolmaz. window.name, kütüphane
+   sayfalarının "Editör" linkiyle bu sekmeyi bulup geri dönebilmesi için gerekli. */
+window.name = "csEditor";
 
 /* ---- Renkli rozet paleti — sahne listesi / kart göstergeleri için sırayla döner ---- */
 const BADGE_PALETTE = ["--pink", "--blue", "--orange", "--green", "--purple"];
@@ -1315,6 +1358,7 @@ function setActive(id){
   $("#btnShot").disabled = false;
   $("#btnExport").disabled = false;
   $("#btnSaveModelLib").disabled = false;
+  $("#btnCropRender").disabled = false;
   renderItemList();
   rebuildMaterialTab();
   frameActive();
@@ -1337,7 +1381,7 @@ function removeItem(id){
       $("#vpEmpty").style.display = "flex";
       $("#ptName").textContent = "—"; $("#ptSub").textContent = "Sahne boş";
       $("#crumbName").textContent = "—";
-      $("#btnShot").disabled = true; $("#btnExport").disabled = true; $("#btnSaveModelLib").disabled = true;
+      $("#btnShot").disabled = true; $("#btnExport").disabled = true; $("#btnSaveModelLib").disabled = true; $("#btnCropRender").disabled = true;
       $("#tab-material").innerHTML = '<div class="empty-tab">Malzeme göstermek için bir model içe aktar.</div>';
       updateHud();
       detachGizmo(); // silinen obje gizmo'ya bağlıydı, sahne artık boş — sarkan referansı temizle
@@ -2390,11 +2434,22 @@ $("#btnFloor").addEventListener("click", ()=>{
 $("#btnRecenter").addEventListener("click", frameActive);
 $("#btnDelete").addEventListener("click", ()=>{ if(activeId) removeItem(activeId); });
 
-/* ---------------- Sekme geçişi ---------------- */
-document.querySelectorAll(".seg button").forEach(btn=>btn.addEventListener("click", ()=>{
-  document.querySelectorAll(".seg button").forEach(b=>b.classList.remove("on"));
+/* ---------------- Sekme geçişi (her .seg grubu kendi düğme/panel kümesiyle sınırlı — birden
+   fazla .seg olduğunda (sağ panel + sol Sahne paneli) birbirlerine karışmamaları için) ---------------- */
+function wireSegTabs(segId, tabIds, display){
+  const seg = $(segId);
+  seg.querySelectorAll("button").forEach(btn=>btn.addEventListener("click", ()=>{
+    seg.querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+    btn.classList.add("on");
+    tabIds.forEach(t=>{ $("#tab-"+t).style.display = (t===btn.dataset.tab)?display:"none"; });
+  }));
+}
+wireSegTabs("#configSeg", ["material","light","camera","scene"], "block");
+
+$("#sceneSeg").querySelectorAll("button").forEach(btn=>btn.addEventListener("click", ()=>{
+  $("#sceneSeg").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
   btn.classList.add("on");
-  ["material","light","camera","scene"].forEach(t=>{ $("#tab-"+t).style.display = (t===btn.dataset.tab)?"block":"none"; });
+  ["products","transform"].forEach(t=> $("#tab-"+t).classList.toggle("on", t===btn.dataset.tab));
 }));
 
 /* ---------------- Kayar paneller (varsayılan gizli, kenar tırnağıyla aç/kapa) ---------------- */
@@ -2512,6 +2567,112 @@ $("#btnShot").addEventListener("click", ()=>{
   transformGizmoObj.visible = gizmoWasVisible;
   const a = document.createElement("a"); a.href = url; a.download = "configurator-onizleme.png"; a.click();
   toast("Ekran görüntüsü indirildi.");
+});
+
+/* ---- Görüntü Yakalama (viewport popover + Sahne sekmesindeki "Render'da Kırp") ----
+   Viewport'u yakalayıp IndexedDB "captures" mağazasına kaydeder, sonra Render sayfasını
+   (kırpma aracı) "csRender" adlı sekmede açar/odaklar — bu editör sekmesi hiç dokunulmadan
+   kalır (bkz. sendToEditor'daki aynı target="..." deseni, kütüphane sayfalarında).
+
+   Süper örnekleme (2×/4×): pixelRatio geçici olarak ölçeğe alınır (CSS boyutu sabit), tek
+   kare composer.render() ile çizilip aynı görevde kopyalanır ve her şey geri alınır —
+   preserveDrawingBuffer kapalı olduğu için kopya render'la aynı task içinde yapılmalı.
+   Şeffaflık: scene.background geçici null — renderer alpha:true ve colorgrade shader
+   alfayı koruduğu (texel.a) için composer çıktısında alfa kanalı yaşar. */
+const CAPTURE_OPTS_KEY = "cs_capture_opts";
+let captureOpts = { scale: 1, transparent: false };
+try{ Object.assign(captureOpts, JSON.parse(localStorage.getItem(CAPTURE_OPTS_KEY) || "{}")); }catch{ /* bozuk kayıt → varsayılanlar */ }
+
+function renderCaptureCanvas(){
+  const w = host.clientWidth, h = host.clientHeight;
+  let s = captureOpts.scale;
+  const maxTex = renderer.capabilities.maxTextureSize;
+  while(s > 1 && (w*s > maxTex || h*s > maxTex)) s /= 2;
+  if(s !== captureOpts.scale) toast(`GPU doku sınırı: ${captureOpts.scale}× yerine ${s}× kullanıldı.`, true);
+  const prWas = renderer.getPixelRatio();
+  const gizmoWasVisible = transformGizmoObj.visible;
+  const bgWas = scene.background;
+  transformGizmoObj.visible = false;
+  if(captureOpts.transparent) scene.background = null;
+  try{
+    renderer.setPixelRatio(s); renderer.setSize(w, h, false);
+    composer.setPixelRatio(s); composer.setSize(w, h);
+    composer.render();
+    const out = document.createElement("canvas");
+    out.width = renderer.domElement.width; out.height = renderer.domElement.height;
+    const ctx = out.getContext("2d");
+    if(!captureOpts.transparent && !bgWas){
+      // Ekranda #stage-bg'nin CSS degradesi görünüyor (HDRI arka planı kapalı) — aynı degrade
+      // karta işlenir, yoksa çıktı kullanıcı istemeden şeffaf olurdu.
+      const L = LIGHTS.find(l=>l.id===curLight);
+      const rad = Math.max(out.width, out.height) * 1.1;
+      const g = ctx.createRadialGradient(out.width/2, -out.height*0.1, 0, out.width/2, -out.height*0.1, rad);
+      g.addColorStop(0, L.bg[0]); g.addColorStop(0.78, L.bg[1]); g.addColorStop(1, L.bg[1]);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, out.width, out.height);
+    }
+    ctx.drawImage(renderer.domElement, 0, 0);
+    return { canvas: out, scaleUsed: s };
+  }finally{
+    transformGizmoObj.visible = gizmoWasVisible;
+    scene.background = bgWas;
+    renderer.setPixelRatio(prWas); renderer.setSize(w, h, false);
+    composer.setPixelRatio(prWas); composer.setSize(w, h);
+    composer.render(); // animasyon döngüsünü beklemeden normal kareyi geri çiz (tek karelik parlama olmasın)
+  }
+}
+
+function captureToRender(){
+  const item = items.find(i=>i.id===activeId);
+  if(!item){ toast("Sahnede model yok.", true); return; }
+  const { canvas } = renderCaptureCanvas();
+  canvas.toBlob(async (blob)=>{
+    if(!blob){ toast("Görüntü yakalanamadı.", true); return; }
+    const rec = {
+      id: newId("cap"),
+      name: (item.isSample ? "Atlas Lounge Chair" : item.name) || "Görüntü",
+      createdAt: new Date().toISOString(),
+      width: canvas.width, height: canvas.height,
+      transparent: !!captureOpts.transparent,
+      imageBlob: blob,
+    };
+    await dbPut("captures", rec);
+    localStorage.setItem("cs_pending_capture", rec.id);
+    const a = document.createElement("a");
+    a.href = "../05_RENDER/render.html";
+    a.target = "csRender";
+    a.click();
+    toast(`Görüntü yakalandı (${canvas.width}×${canvas.height}) — Render'da açılıyor.`);
+  }, "image/png");
+}
+
+$("#btnCropRender").addEventListener("click", captureToRender);
+
+/* Popover aç/kapa + ayar kalıcılığı */
+const capturePop = $("#capturePop");
+$("#vpCaptureBtn").addEventListener("click", (e)=>{
+  e.stopPropagation();
+  capturePop.style.display = capturePop.style.display === "none" ? "flex" : "none";
+});
+document.addEventListener("click", (e)=>{
+  if(capturePop.style.display !== "none" && !capturePop.contains(e.target)) capturePop.style.display = "none";
+});
+document.addEventListener("keydown", (e)=>{ if(e.key === "Escape") capturePop.style.display = "none"; });
+$("#capScaleSeg").querySelectorAll("button").forEach(b=>{
+  b.classList.toggle("on", +b.dataset.scale === captureOpts.scale);
+  b.addEventListener("click", ()=>{
+    captureOpts.scale = +b.dataset.scale;
+    localStorage.setItem(CAPTURE_OPTS_KEY, JSON.stringify(captureOpts));
+    $("#capScaleSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("on", x===b));
+  });
+});
+$("#capTransparent").checked = !!captureOpts.transparent;
+$("#capTransparent").addEventListener("change", (e)=>{
+  captureOpts.transparent = e.target.checked;
+  localStorage.setItem(CAPTURE_OPTS_KEY, JSON.stringify(captureOpts));
+});
+$("#btnCaptureGo").addEventListener("click", ()=>{
+  capturePop.style.display = "none";
+  captureToRender();
 });
 $("#btnExport").addEventListener("click", ()=>{
   const item = items.find(i=>i.id===activeId); if(!item) return;

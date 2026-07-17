@@ -5,7 +5,7 @@
 // aynı IndexedDB veritabanını paylaşırlar — "Kütüphaneye Kaydet" bu sayede çalışır.
 
 const DB_NAME = "configurator_studio_library";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let _dbPromise = null;
 function openDB() {
@@ -30,6 +30,11 @@ function openDB() {
       }
       if (!db.objectStoreNames.contains("collections")) {
         db.createObjectStore("collections", { keyPath: "id" });
+      }
+      // v2: Editördeki "Render'da Kırp" ile yakalanan viewport görüntüleri — Render sayfasında kırpılıp indirilir.
+      if (!db.objectStoreNames.contains("captures")) {
+        const s = db.createObjectStore("captures", { keyPath: "id" });
+        s.createIndex("createdAt", "createdAt");
       }
     };
     req.onsuccess = () => resolve(req.result);

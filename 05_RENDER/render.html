@@ -1,0 +1,482 @@
+<meta charset="utf-8">
+<title>Render — Configurator Studio</title>
+<link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+<style>
+  :root{
+    --bg-grad: radial-gradient(120% 100% at 26% -8%, #223056 0%, #0b0f18 58%);
+    --panel: rgba(19,27,40,.66); --panel2: rgba(255,255,255,.055); --panel-solid:#161d2b;
+    --ink:#F2F5F9; --dim:rgba(242,245,249,.56);
+    --line:rgba(255,255,255,.10); --line2:rgba(255,255,255,.17);
+    --accent:#7C5CFC; --accent2:#9C7CFF;
+    --pink:#F0568F; --blue:#3B8BF5; --orange:#F5A623; --green:#33E08A; --purple:#8B5CF6;
+    --err:#FF5C7A; --ok:#33E08A;
+    --blur: blur(22px) saturate(170%);
+    --r-lg:22px; --r-md:14px; --r-sm:9px; --r-pill:999px;
+    --shadow-float: 0 18px 44px -18px rgba(0,0,0,.55);
+    --font-ui:-apple-system,"Segoe UI",system-ui,sans-serif;
+    --font-mono:"SF Mono","Consolas","Courier New",monospace;
+  }
+  :root[data-theme="light"]{
+    --bg-grad: radial-gradient(120% 100% at 26% -8%, #EAF3F5 0%, #E6E8F7 55%, #EEF0FB 100%);
+    --panel: rgba(255,255,255,.70); --panel2: rgba(20,30,50,.045); --panel-solid:#ffffff;
+    --ink:#141A24; --dim:rgba(20,26,36,.58);
+    --line:rgba(20,30,50,.09); --line2:rgba(20,30,50,.15);
+    --accent:#6A45E8; --accent2:#8563F2;
+    --pink:#E14E86; --blue:#2F76E0; --orange:#DE8A0C; --green:#149E63; --purple:#7C4CE0;
+    --err:#E14367; --ok:#149E63;
+    --shadow-float: 0 18px 40px -18px rgba(30,40,70,.22);
+  }
+  :root[data-theme="warm"]{
+    --bg-grad: #F4EFE2;
+    --panel:#FFFFFF; --panel2:#ECE6D5; --panel-solid:#FFFFFF;
+    --ink:#17140F; --dim:#726C5C;
+    --line:#DED5BB; --line2:#17140F;
+    --accent:#2F6DF0; --accent2:#5089F5;
+    --pink:#F3AD8C; --blue:#2F6DF0; --orange:#F0C13E; --green:#3E9B6B; --purple:#8A6CD6;
+    --err:#E0523F; --ok:#3E9B6B;
+    --blur: none;
+    --shadow-float: 0 10px 24px -14px rgba(23,20,15,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:var(--font-ui);color:var(--ink);background:var(--bg-grad);font-size:13.5px;-webkit-font-smoothing:antialiased}
+  button,input,select,textarea{font-family:inherit}
+  .app{display:grid;grid-template-rows:60px 1fr;height:100vh}
+  .topbar{display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);z-index:5;box-shadow:var(--shadow-float)}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:13.5px}
+  .brand .mark{width:26px;height:26px;flex:0 0 auto;display:block;filter:drop-shadow(0 3px 6px rgba(30,15,80,.28))}
+  .brand .mark svg{width:100%;height:100%;display:block}
+  .nav{display:flex;gap:2px;margin-left:8px;background:var(--panel2);padding:3px;border-radius:var(--r-pill);border:1px solid var(--line)}
+  .nav a{font-size:11.5px;font-weight:700;color:var(--dim);text-decoration:none;padding:7px 13px;border-radius:var(--r-pill);transition:.15s}
+  .nav a:hover{color:var(--ink)}
+  .nav a.on{background:linear-gradient(135deg, var(--accent2), var(--accent));color:#fff;box-shadow:0 4px 14px -4px var(--accent)}
+  .spacer{flex:1}
+  .btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;padding:8px 15px;border-radius:var(--r-pill);border:1px solid var(--line2);background:var(--panel2);color:var(--ink);cursor:pointer;transition:.15s}
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:linear-gradient(135deg, var(--accent2), var(--accent));border-color:transparent;color:#fff;box-shadow:0 6px 18px -6px var(--accent)}
+  .btn.danger{border-color:var(--err);color:var(--err)}
+  .btn.sm{padding:6px 12px;font-size:11px}
+  .theme-toggle{width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:var(--panel2);color:var(--dim);display:grid;place-items:center;cursor:pointer;transition:.15s;flex:0 0 auto}
+  .theme-toggle:hover{color:var(--ink);border-color:var(--accent)}
+  .theme-toggle svg{width:16px;height:16px}
+
+  .body{display:grid;grid-template-columns:250px 1fr;min-height:0;overflow:hidden;gap:12px;padding:12px}
+  .sidebar{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);overflow-y:auto;padding:16px;box-shadow:var(--shadow-float)}
+  .sidebar h3{font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin:0 0 10px;font-weight:800}
+  .empty-hint{padding:16px 4px;color:var(--dim);font-size:11.5px;line-height:1.6}
+
+  .capture-list{display:flex;flex-direction:column;gap:6px}
+  .capture-item{display:flex;gap:9px;align-items:center;padding:7px;border-radius:var(--r-md);cursor:pointer;border:1px solid transparent;transition:.12s}
+  .capture-item:hover{background:var(--panel2)}
+  .capture-item.on{background:var(--panel2);border-color:var(--accent)}
+  .ci-thumb{width:44px;height:36px;border-radius:8px;background-size:cover;background-position:center;background-color:var(--panel2);flex:0 0 auto;border:1px solid var(--line2)}
+  .ci-info{min-width:0;flex:1}
+  .ci-info .n{font-size:11.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .ci-info .m{font-size:9.5px;color:var(--dim)}
+  .ci-del{width:20px;height:20px;border-radius:6px;border:none;background:none;color:var(--dim);display:grid;place-items:center;cursor:pointer;flex:0 0 auto;font-size:11px}
+  .ci-del:hover{background:color-mix(in srgb, var(--err) 18%, transparent);color:var(--err)}
+
+  .main{overflow-y:auto;padding:4px 8px 20px;display:flex;flex-direction:column;min-height:0}
+  .main-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .main-head h1{font-size:16px;margin:0;font-weight:800}
+  .count{font-size:11.5px;color:var(--dim)}
+
+  .empty{padding:60px 20px;text-align:center;color:var(--dim);border:1.5px dashed var(--line2);border-radius:var(--r-lg);margin-top:6px}
+  .empty b{display:block;font-size:14px;color:var(--ink);margin-bottom:6px}
+
+  .seg{display:flex;gap:3px;padding:4px;background:var(--panel2);border-radius:var(--r-pill);border:1px solid var(--line)}
+  .seg button{padding:7px 12px;border-radius:var(--r-pill);border:1px solid transparent;background:none;color:var(--dim);font-size:11px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap}
+  .seg button.on{background:linear-gradient(135deg, var(--accent2), var(--accent));color:#fff;box-shadow:0 4px 12px -4px var(--accent)}
+
+  .crop-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .crop-dims{font-family:var(--font-mono);font-size:11.5px;color:var(--dim)}
+  /* İndirme format/kalite kontrolleri */
+  .fmt-select{font-size:11px;font-weight:700;padding:6px 10px;border-radius:var(--r-pill);border:1px solid var(--line2);background:var(--panel2);color:var(--ink);cursor:pointer}
+  .quality-wrap{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim)}
+  .quality-wrap input[type=range]{width:90px;accent-color:var(--accent)}
+  .quality-wrap .qval{font-family:var(--font-mono);min-width:30px}
+
+  .crop-stage-wrap{display:flex;justify-content:center;align-items:flex-start;background:var(--panel2);border:1px solid var(--line);border-radius:var(--r-md);padding:20px;overflow:auto;flex:1}
+  .crop-stage{position:relative;display:inline-block;line-height:0}
+  .crop-stage img{display:block;max-width:min(900px, 66vw);max-height:64vh;user-select:none;-webkit-user-drag:none}
+  .crop-stage img.transparent{background:repeating-conic-gradient(#80808033 0 25%, transparent 0 50%) 0 0/16px 16px} /* şeffaf görüntüde damalı zemin */
+  .crop-mask{position:absolute;background:rgba(6,9,16,.6);pointer-events:none}
+  .crop-box{position:absolute;border:1.5px dashed #fff;box-shadow:0 0 0 1px rgba(0,0,0,.35);cursor:move;touch-action:none}
+  .crop-handle{position:absolute;width:13px;height:13px;background:var(--accent);border:2px solid #fff;border-radius:4px;touch-action:none}
+  .crop-handle[data-h="nw"]{left:-7px;top:-7px;cursor:nwse-resize}
+  .crop-handle[data-h="ne"]{right:-7px;top:-7px;cursor:nesw-resize}
+  .crop-handle[data-h="sw"]{left:-7px;bottom:-7px;cursor:nesw-resize}
+  .crop-handle[data-h="se"]{right:-7px;bottom:-7px;cursor:nwse-resize}
+
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(10px);background:var(--panel-solid);color:var(--ink);border:1px solid var(--line2);font-size:12.5px;font-weight:600;padding:11px 18px;border-radius:var(--r-pill);opacity:0;transition:.25s;pointer-events:none;z-index:99;box-shadow:var(--shadow-float)}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .toast.err{background:var(--err);border-color:var(--err);color:#fff}
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:4px}
+
+  [data-theme="warm"] .topbar,
+  [data-theme="warm"] .sidebar,
+  [data-theme="warm"] .toast{ border-width:1.5px; border-color:var(--line2) }
+  [data-theme="warm"] .btn.primary,
+  [data-theme="warm"] .nav a.on,
+  [data-theme="warm"] .seg button.on{ background:var(--ink); color:#fff; box-shadow:none }
+  [data-theme="warm"] .brand{ font-weight:900; letter-spacing:-.3px }
+  [data-theme="warm"] .main-head h1{ font-weight:900 }
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><span class="mark"><svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="16" width="20" height="20" rx="6" fill="var(--orange)" transform="rotate(-10 20 26)"/><rect x="15" y="11" width="20" height="20" rx="6" fill="var(--blue)" transform="rotate(6 25 21)"/><rect x="13" y="18" width="20" height="20" rx="6" fill="var(--pink)" transform="rotate(-2 23 28)"/></svg></span>Configurator Studio</div>
+    <nav class="nav">
+      <a href="../03_ARAC/model-material-editor.html" data-nav="editor" id="navEditor" target="csEditor">Editör</a>
+      <a href="../04_KUTUPHANE/material-library.html" data-nav="materials" id="navMaterials" target="csMaterialLib">Materyal Kütüphanesi</a>
+      <a href="../04_KUTUPHANE/model-library.html" data-nav="models" id="navModels" target="csModelLib">Model Kütüphanesi</a>
+      <a href="render.html" data-nav="render" class="on">Render</a>
+    </nav>
+    <div class="spacer"></div>
+    <button class="theme-toggle" id="themeToggle" title="Açık/koyu tema">
+      <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/></svg>
+      <svg id="themeIconWarm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><path d="M12 2c2 3 4 5.5 4 9a4 4 0 0 1-8 0c0-1 .3-1.8.8-2.6.3.9 1 1.6 1.2 1 .3-.9-.3-2-.3-3.4 0-1.6.9-3 2.3-4Z"/></svg>
+    </button>
+  </div>
+
+  <div class="body">
+    <div class="sidebar">
+      <h3>Yakalanan Görüntüler</h3>
+      <div id="captureList" class="capture-list"></div>
+    </div>
+
+    <div class="main">
+      <div class="main-head">
+        <h1>Render — Görüntü Kırpma</h1>
+        <span class="count" id="capInfo"></span>
+      </div>
+
+      <div id="cropEmpty" class="empty">
+        <b>Görüntü seçilmedi</b>
+        Model &amp; Malzeme Editörü'nde "🖼 Render'da Kırp" ile bir görüntü yakala ya da soldaki listeden birini seç.
+      </div>
+
+      <div id="cropWorkspace" style="display:none;flex:1;flex-direction:column;min-height:0">
+        <div class="crop-toolbar">
+          <div class="seg" id="ratioSeg">
+            <button class="on" data-ratio="free">Serbest</button>
+            <button data-ratio="1">1:1</button>
+            <button data-ratio="1.3333">4:3</button>
+            <button data-ratio="1.7778">16:9</button>
+            <button data-ratio="0.5625">9:16</button>
+            <button data-ratio="1.5">3:2</button>
+          </div>
+          <button class="btn sm" id="btnResetCrop">↺ Sıfırla</button>
+          <div class="spacer"></div>
+          <span class="crop-dims" id="cropDims"></span>
+          <select class="fmt-select" id="fmtSelect" title="İndirme formatı">
+            <option value="png" selected>PNG</option>
+            <option value="jpeg">JPEG</option>
+            <option value="webp">WebP</option>
+          </select>
+          <div class="quality-wrap" id="qualityWrap" style="display:none">
+            <span>Kalite</span>
+            <input type="range" id="qualityRange" min="50" max="100" value="90">
+            <span class="qval" id="qualityVal">90</span>
+          </div>
+          <button class="btn sm primary" id="btnDownloadCrop">⬇ İndir</button>
+        </div>
+        <div class="crop-stage-wrap">
+          <div class="crop-stage" id="cropStage">
+            <img id="cropImg" draggable="false">
+            <div class="crop-mask" id="maskTop"></div>
+            <div class="crop-mask" id="maskBottom"></div>
+            <div class="crop-mask" id="maskLeft"></div>
+            <div class="crop-mask" id="maskRight"></div>
+            <div class="crop-box" id="cropBox">
+              <div class="crop-handle" data-h="nw"></div>
+              <div class="crop-handle" data-h="ne"></div>
+              <div class="crop-handle" data-h="sw"></div>
+              <div class="crop-handle" data-h="se"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { dbGetAll, dbGet, dbDelete } from '../04_KUTUPHANE/js/db.js';
+
+const $ = s => document.querySelector(s);
+function toast(msg, isErr){
+  const t = $("#toast"); t.textContent = msg; t.className = "toast show" + (isErr?" err":"");
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 3000);
+}
+
+/* ---- "Editör"/"Materyal"/"Model" sekmelerine geçiş — bu sekme onlardan biri tarafından
+   açıldıysa (window.opener) sadece ona odaklan (sıfır navigasyon, karşı sekmenin durumu
+   korunur); değilse linklerin kendi target="..." özelliği devreye girer (adıyla bul/aç). ---- */
+$("#navEditor").addEventListener("click", e=>{
+  if(window.opener && !window.opener.closed){ e.preventDefault(); window.opener.focus(); }
+});
+window.name = window.name || "csRender";
+
+/* ---- Tema geçişi (koyu/açık/sıcak) — diğer sayfalarla aynı localStorage anahtarını paylaşır ---- */
+const THEME_ORDER = ["dark", "light", "warm"];
+function applyThemeIcon(theme){
+  $("#themeIconSun").style.display = theme === "light" ? "" : "none";
+  $("#themeIconMoon").style.display = theme === "dark" ? "" : "none";
+  $("#themeIconWarm").style.display = theme === "warm" ? "" : "none";
+}
+(function initTheme(){
+  const saved = localStorage.getItem("cs_theme") || "dark";
+  document.documentElement.dataset.theme = saved;
+  applyThemeIcon(saved);
+})();
+$("#themeToggle").addEventListener("click", ()=>{
+  const cur = document.documentElement.dataset.theme || "dark";
+  const next = THEME_ORDER[(THEME_ORDER.indexOf(cur) + 1) % THEME_ORDER.length];
+  document.documentElement.dataset.theme = next;
+  localStorage.setItem("cs_theme", next);
+  applyThemeIcon(next);
+});
+
+/* ================= Yakalanan görüntüler listesi ================= */
+let captures = [];
+let currentCapture = null;
+let thumbUrls = []; // liste küçük resimleri için — her renderCaptureList'te temizlenir
+let imgUrl = null;  // aktif crop görüntüsünün object URL'i — ayrı tutulur (liste temizliğinden etkilenmesin)
+
+function revokeThumbs(){ thumbUrls.forEach(u=>URL.revokeObjectURL(u)); thumbUrls = []; }
+function thumbFor(blob){ const u = URL.createObjectURL(blob); thumbUrls.push(u); return u; }
+
+async function loadCaptures(){
+  captures = await dbGetAll("captures");
+  captures.sort((a,b)=> (b.createdAt||"").localeCompare(a.createdAt||""));
+  renderCaptureList();
+}
+
+function renderCaptureList(){
+  revokeThumbs();
+  const el = $("#captureList");
+  $("#capInfo").textContent = captures.length ? captures.length + " görüntü" : "";
+  if(!captures.length){
+    el.innerHTML = `<div class="empty-hint">Henüz yakalanan görüntü yok. Editörde bir sahne hazırlayıp "Render'da Kırp" butonuna bas.</div>`;
+    return;
+  }
+  el.innerHTML = captures.map(c=>`
+    <div class="capture-item ${currentCapture?.id===c.id?'on':''}" data-id="${c.id}">
+      <div class="ci-thumb" style="background-image:url(${thumbFor(c.imageBlob)})"></div>
+      <div class="ci-info">
+        <div class="n">${c.name || "Görüntü"}</div>
+        <div class="m">${new Date(c.createdAt).toLocaleString("tr-TR")}</div>
+      </div>
+      <button class="ci-del" data-del="${c.id}" title="Sil">✕</button>
+    </div>`).join("");
+  el.querySelectorAll(".capture-item").forEach(it=>{
+    it.addEventListener("click", e=>{
+      if(e.target.closest("[data-del]")) return;
+      loadCapture(it.dataset.id);
+    });
+  });
+  el.querySelectorAll("[data-del]").forEach(btn=>{
+    btn.addEventListener("click", async e=>{
+      e.stopPropagation();
+      const id = btn.dataset.del;
+      await dbDelete("captures", id);
+      if(currentCapture?.id === id){
+        currentCapture = null;
+        $("#cropWorkspace").style.display = "none";
+        $("#cropEmpty").style.display = "block";
+      }
+      await loadCaptures();
+      toast("Görüntü silindi.");
+    });
+  });
+}
+
+/* ================= Kırpma aracı ================= */
+let cropRect = null;   // {x,y,w,h} — DÖRT KENAR da .crop-stage içindeki GÖRÜNTÜLENEN piksel cinsinden
+let aspectLock = null; // null (serbest) ya da genişlik/yükseklik oranı
+
+function fullStageRect(){
+  const stage = $("#cropStage");
+  return { x: 0, y: 0, w: stage.clientWidth, h: stage.clientHeight };
+}
+
+function layoutCropBox(){
+  if(!cropRect) return;
+  const box = $("#cropBox");
+  box.style.left = cropRect.x + "px";
+  box.style.top = cropRect.y + "px";
+  box.style.width = cropRect.w + "px";
+  box.style.height = cropRect.h + "px";
+
+  const { w: stageW, h: stageH } = fullStageRect();
+  $("#maskTop").style.cssText    = `left:0;top:0;width:${stageW}px;height:${Math.max(0,cropRect.y)}px;`;
+  $("#maskBottom").style.cssText = `left:0;top:${cropRect.y+cropRect.h}px;width:${stageW}px;height:${Math.max(0,stageH-(cropRect.y+cropRect.h))}px;`;
+  $("#maskLeft").style.cssText   = `left:0;top:${cropRect.y}px;width:${Math.max(0,cropRect.x)}px;height:${cropRect.h}px;`;
+  $("#maskRight").style.cssText  = `left:${cropRect.x+cropRect.w}px;top:${cropRect.y}px;width:${Math.max(0,stageW-(cropRect.x+cropRect.w))}px;height:${cropRect.h}px;`;
+}
+
+function updateDimsLabel(){
+  const img = $("#cropImg");
+  if(!img.naturalWidth || !cropRect || !img.clientWidth) return;
+  const scale = img.naturalWidth / img.clientWidth;
+  const w = Math.round(cropRect.w * scale), h = Math.round(cropRect.h * scale);
+  $("#cropDims").textContent = w + " × " + h + " px";
+}
+
+function applyRatioPreset(ratio){
+  aspectLock = ratio;
+  if(ratio == null) return; // yalnızca kilidi kapat, mevcut kırpma alanını koru
+  const { w: maxW, h: maxH } = fullStageRect();
+  let w = maxW, h = w / ratio;
+  if(h > maxH){ h = maxH; w = h * ratio; }
+  cropRect = { x: (maxW-w)/2, y: (maxH-h)/2, w, h };
+  layoutCropBox(); updateDimsLabel();
+}
+
+function resizeFromHandle(handle, startRect, dx, dy, maxW, maxH){
+  let left = startRect.x, top = startRect.y, right = startRect.x+startRect.w, bottom = startRect.y+startRect.h;
+  if(handle.includes("n")) top = startRect.y + dy;
+  if(handle.includes("s")) bottom = startRect.y + startRect.h + dy;
+  if(handle.includes("w")) left = startRect.x + dx;
+  if(handle.includes("e")) right = startRect.x + startRect.w + dx;
+
+  left = Math.max(0, left); top = Math.max(0, top);
+  right = Math.min(maxW, right); bottom = Math.min(maxH, bottom);
+  if(right - left < 24){ if(handle.includes("w")) left = right - 24; else right = left + 24; }
+  if(bottom - top < 24){ if(handle.includes("n")) top = bottom - 24; else bottom = top + 24; }
+
+  if(aspectLock){
+    const fixedX = handle.includes("w") ? right : left;
+    const fixedY = handle.includes("n") ? bottom : top;
+    let targetW = right - left, targetH = targetW / aspectLock;
+    if(targetH > bottom - top){ targetH = bottom - top; targetW = targetH * aspectLock; }
+    if(handle.includes("w")) left = fixedX - targetW; else right = fixedX + targetW;
+    if(handle.includes("n")) top = fixedY - targetH; else bottom = fixedY + targetH;
+    left = Math.max(0, left); top = Math.max(0, top);
+    right = Math.min(maxW, right); bottom = Math.min(maxH, bottom);
+  }
+  cropRect = { x: left, y: top, w: right-left, h: bottom-top };
+}
+
+let dragState = null;
+function stagePoint(e){
+  const r = $("#cropStage").getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+$("#cropBox").addEventListener("pointerdown", e=>{
+  if(e.target.closest(".crop-handle")) return;
+  e.preventDefault();
+  dragState = { mode:"move", start: stagePoint(e), rect: {...cropRect} };
+  $("#cropBox").setPointerCapture(e.pointerId);
+});
+$("#cropBox").querySelectorAll(".crop-handle").forEach(h=>{
+  h.addEventListener("pointerdown", e=>{
+    e.preventDefault(); e.stopPropagation();
+    dragState = { mode:"resize", handle: h.dataset.h, start: stagePoint(e), rect: {...cropRect} };
+    h.setPointerCapture(e.pointerId);
+  });
+});
+document.addEventListener("pointermove", e=>{
+  if(!dragState || !cropRect) return;
+  const p = stagePoint(e);
+  const dx = p.x - dragState.start.x, dy = p.y - dragState.start.y;
+  const { w: maxW, h: maxH } = fullStageRect();
+  if(dragState.mode === "move"){
+    let nx = dragState.rect.x + dx, ny = dragState.rect.y + dy;
+    nx = Math.max(0, Math.min(maxW - dragState.rect.w, nx));
+    ny = Math.max(0, Math.min(maxH - dragState.rect.h, ny));
+    cropRect = { ...dragState.rect, x: nx, y: ny };
+  } else {
+    resizeFromHandle(dragState.handle, dragState.rect, dx, dy, maxW, maxH);
+  }
+  layoutCropBox();
+  updateDimsLabel();
+});
+document.addEventListener("pointerup", ()=>{ dragState = null; });
+
+$("#ratioSeg").querySelectorAll("button").forEach(btn=>btn.addEventListener("click", ()=>{
+  $("#ratioSeg").querySelectorAll("button").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  applyRatioPreset(btn.dataset.ratio === "free" ? null : parseFloat(btn.dataset.ratio));
+}));
+$("#btnResetCrop").addEventListener("click", ()=>{
+  aspectLock = null;
+  $("#ratioSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.ratio==="free"));
+  cropRect = fullStageRect();
+  layoutCropBox(); updateDimsLabel();
+});
+/* Format seçimi: PNG kayıpsız + şeffaflık korunur; WebP kayıplı + şeffaflık korunur;
+   JPEG alfa desteklemediği için şeffaf alanlar beyazla doldurulur. Kalite kaydırıcısı
+   yalnızca kayıplı formatlarda görünür. */
+$("#fmtSelect").addEventListener("change", ()=>{
+  $("#qualityWrap").style.display = $("#fmtSelect").value === "png" ? "none" : "flex";
+});
+$("#qualityRange").addEventListener("input", ()=>{ $("#qualityVal").textContent = $("#qualityRange").value; });
+
+$("#btnDownloadCrop").addEventListener("click", ()=>{
+  const img = $("#cropImg");
+  if(!cropRect || !img.naturalWidth) return;
+  const scale = img.naturalWidth / img.clientWidth;
+  const sx = cropRect.x * scale, sy = cropRect.y * scale;
+  const sw = cropRect.w * scale, sh = cropRect.h * scale;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(sw));
+  canvas.height = Math.max(1, Math.round(sh));
+  const ctx = canvas.getContext("2d");
+  const fmt = $("#fmtSelect").value; // png | jpeg | webp
+  if(fmt === "jpeg"){ ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+  ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+  const quality = (+$("#qualityRange").value) / 100;
+  canvas.toBlob(blob=>{
+    if(!blob){ toast("Görüntü oluşturulamadı.", true); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const ext = fmt === "jpeg" ? "jpg" : fmt;
+    a.href = url; a.download = (currentCapture?.name || "render").replace(/[^\w\-]+/g,"_") + "_kirpilmis." + ext;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast(ext.toUpperCase() + " indirildi.");
+  }, "image/" + fmt, fmt === "png" ? undefined : quality);
+});
+
+async function loadCapture(id){
+  const rec = await dbGet("captures", id);
+  if(!rec){ toast("Görüntü bulunamadı.", true); return; }
+  currentCapture = rec;
+  if(imgUrl) URL.revokeObjectURL(imgUrl);
+  imgUrl = URL.createObjectURL(rec.imageBlob);
+  const img = $("#cropImg");
+  img.classList.toggle("transparent", !!rec.transparent); // şeffaf yakalamada damalı zemin göster
+  img.onload = ()=>{
+    $("#cropEmpty").style.display = "none";
+    $("#cropWorkspace").style.display = "flex";
+    aspectLock = null;
+    $("#ratioSeg").querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.ratio==="free"));
+    requestAnimationFrame(()=>{
+      cropRect = fullStageRect();
+      layoutCropBox();
+      updateDimsLabel();
+    });
+  };
+  img.src = imgUrl;
+  renderCaptureList();
+}
+
+/* Editörden "Render'da Kırp" ile gelen taze yakalamayı otomatik yükler. */
+async function consumePendingCapture(){
+  const id = localStorage.getItem("cs_pending_capture");
+  if(!id) return;
+  localStorage.removeItem("cs_pending_capture");
+  await loadCapture(id);
+}
+
+window.addEventListener("resize", ()=>{ if(cropRect){ cropRect = fullStageRect(); layoutCropBox(); updateDimsLabel(); } });
+
+await loadCaptures();
+await consumePendingCapture();
+</script>
