@@ -178,6 +178,7 @@
   .vp-capture-pop .btn{width:100%;justify-content:center}
   .vp-hud{position:absolute;left:16px;bottom:14px;display:flex;flex-direction:column;gap:4px;pointer-events:none}
   .hud-chip{font-family:var(--font-mono);font-size:10.5px;color:var(--ink);background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:1px solid var(--line);padding:5px 9px;border-radius:var(--r-pill);width:fit-content}
+  .hud-chip.hud-precision{color:#fff;border-color:transparent;background:linear-gradient(135deg, var(--accent2), var(--accent));font-weight:700}
 
   /* RIGHT: config */
   .config{
@@ -449,9 +450,9 @@
         <div class="slot" style="margin-bottom:14px">
           <div class="slot-head">Dönüşüm</div>
           <div class="gizmo-mode-row">
-            <button class="icon-btn" id="gizmoMoveL" title="Taşı (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><path d="m5 9-3 3 3 3M19 9l3 3-3 3M9 5l3-3 3 3M9 19l3 3 3-3"/></svg></button>
-            <button class="icon-btn" id="gizmoRotateL" title="Döndür (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4V1L7.5 5 12 9V6a6 6 0 1 1-6 6"/></svg></button>
-            <button class="icon-btn" id="gizmoScaleL" title="Ölçekle (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+            <button class="icon-btn" id="gizmoMoveL" title="Taşıma Aracı (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><path d="m5 9-3 3 3 3M19 9l3 3-3 3M9 5l3-3 3 3M9 19l3 3 3-3"/></svg></button>
+            <button class="icon-btn" id="gizmoRotateL" title="Döndürme Aracı (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4V1L7.5 5 12 9V6a6 6 0 1 1-6 6"/></svg></button>
+            <button class="icon-btn" id="gizmoScaleL" title="Ölçekleme Aracı (R)&#10;Shift: hassas ölçeklendirme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
           </div>
           <div class="field">
             <label>Ölçek <b id="scaleVal">1.00×</b></label>
@@ -464,7 +465,11 @@
             <label>Rot X°<input type="number" id="objRotX" step="1"></label>
             <label>Rot Y°<input type="number" id="objRotY" step="1"></label>
             <label>Rot Z°<input type="number" id="objRotZ" step="1"></label>
+            <label>Scale X<input type="number" id="objSclX" step="0.1" min="0.01"></label>
+            <label>Scale Y<input type="number" id="objSclY" step="0.1" min="0.01"></label>
+            <label>Scale Z<input type="number" id="objSclZ" step="0.1" min="0.01"></label>
           </div>
+          <label class="hdri-chk" title="Açıkken bir ekseni değiştirmek üçünü birden aynı orana getirir"><input type="checkbox" id="sclUniformLock" checked> Uniform ölçek kilidi (X=Y=Z)</label>
           <label class="hdri-chk"><input type="checkbox" id="gizmoSnap"> Izgaraya yapış (Snap)</label>
           <div class="slot-head" style="margin-top:12px">Aynala (Mirror)</div>
           <div class="mirror-row">
@@ -499,9 +504,9 @@
       </div>
 
       <div class="vp-toolbar">
-        <button class="icon-btn" id="gizmoMove" title="Taşı (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><path d="m5 9-3 3 3 3M19 9l3 3-3 3M9 5l3-3 3 3M9 19l3 3 3-3"/></svg></button>
-        <button class="icon-btn" id="gizmoRotate" title="Döndür (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4V1L7.5 5 12 9V6a6 6 0 1 1-6 6"/></svg></button>
-        <button class="icon-btn" id="gizmoScale" title="Ölçekle (R)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
+        <button class="icon-btn" id="gizmoMove" title="Taşıma Aracı (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><path d="m5 9-3 3 3 3M19 9l3 3-3 3M9 5l3-3 3 3M9 19l3 3 3-3"/></svg></button>
+        <button class="icon-btn" id="gizmoRotate" title="Döndürme Aracı (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4V1L7.5 5 12 9V6a6 6 0 1 1-6 6"/></svg></button>
+        <button class="icon-btn" id="gizmoScale" title="Ölçekleme Aracı (R)&#10;Shift: hassas ölçeklendirme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
         <button class="icon-btn" id="gridToggle" title="Izgara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></button>
         <button class="icon-btn" id="wireToggle" title="Tel kafes (wireframe)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 9 5v10l-9 5-9-5V7z"/><path d="M12 2v20M3 7l9 5 9-5M3 17l9-5 9 5"/></svg></button>
         <button class="icon-btn" id="uvToggle" title="UV Grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 8h18M3 13h18M8 3v18M13 3v18"/></svg></button>
@@ -533,6 +538,7 @@
       <div class="vp-hud">
         <div class="hud-chip" id="hudLight">Aydınlatma: Stüdyo</div>
         <div class="hud-chip" id="hudMesh">Mesh: 1 · Malzeme: 1</div>
+        <div class="hud-chip hud-precision" id="hudPrecision" style="display:none">◆ Hassas Ölçek</div>
       </div>
     </div>
 
@@ -1005,6 +1011,10 @@ function makeOrbitControls(cam){
   c.dampingFactor = 0.08;
   c.minDistance = 0.3;
   c.maxDistance = 40;
+  // 3ds Max benzeri düzen: orta tuş = Pan, Alt+orta tuş = Orbit (ViewportInput.apply yönetir),
+  // sol tuş orbit olarak kalır (mevcut alışkanlığı bozmamak için). Tekerlek = zoom.
+  c.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.PAN, RIGHT: THREE.MOUSE.PAN };
+  if(typeof ViewportInput !== "undefined") ViewportInput.applyToControls(c);
   // Kamera tipi değişince (switchCameraType) bu OrbitControls nesnesi YENİDEN oluşturulur —
   // bu yüzden "change" dinleyicisi burada, her yeni örnekte tekrar bağlanacak şekilde duruyor.
   c.addEventListener("change", ()=>{
@@ -1032,6 +1042,66 @@ const transformGizmoObj = (typeof transformControls.getHelper === "function") ? 
 scene.add(transformGizmoObj);
 transformControls.addEventListener("dragging-changed", e=>{ controls.enabled = !e.value; });
 transformControls.addEventListener("objectChange", ()=>{ syncTransformFieldsFromActive(); });
+
+/* ---- Gizmo görünümü: "A — Pastel Neon" varyantı ----
+   Varsayılan sert RGB yerine mercan/nane/gök tonları; seçim düzlemleri sessizleştirilir.
+   TransformControls her karede rengi material._color yedeğinden geri yazar — bu yüzden
+   yedeğin kendisi boyanır. Aynı malzeme birden çok parçada paylaşıldığı için uuid ile
+   tek sefer işlenir (ikinci ziyaret boyalı rengi yeniden sınıflandırıp bozuyordu). */
+const GIZMO_PALETTE = { x:0xff6b7a, y:0x3ddc97, z:0x5aa9ff, screen:0xffd166, neutral:0xe8e6f2 };
+const GIZMO_DIM_PLANES = 0.35;
+/* Renk boru hattı düzeltmesi: composer zincirinde OutputPass yok — RenderPass materyal
+   rengini linear'a çevirir ama çıkışta sRGB'ye GERİ KODLANMAZ. Bu yüzden hex'i normal
+   Color(hex) ile verirsek ekranda koyulaşmış/aşırı doygun görünür (saf 0/1 kanallar
+   etkilenmediği için varsayılan RGB gizmo bundan muaftı). Bayt değerlerini doğrudan
+   LINEAR olarak yazınca ekrana istenen sRGB tonu ulaşır (piksel ölçümüyle doğrulandı). */
+function gizmoColor(hex){
+  const c = new THREE.Color();
+  c.setRGB(((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255, THREE.LinearSRGBColorSpace);
+  return c;
+}
+(function restyleGizmo(){
+  const classify = (c)=>{
+    const {r,g,b} = c;
+    if(r>.6 && g>.6 && b<.4) return "screen";
+    if(r>.6 && g<.5 && b<.5) return "x";
+    if(g>.6 && r<.6 && b<.5) return "y";
+    if(b>.6 && r<.5 && g<.75) return "z";
+    return "neutral";
+  };
+  const islenen = new Set();
+  transformGizmoObj.traverse(o=>{
+    const m = o.material;
+    if(!m || !m.color || islenen.has(m.uuid)) return;
+    islenen.add(m.uuid);
+    const target = gizmoColor(GIZMO_PALETTE[classify(m._color || m.color)]);
+    m.color.copy(target);
+    m._color = target.clone();
+    const baseOp = (m._opacity != null) ? m._opacity : m.opacity;
+    if(m.transparent && baseOp <= .6 && baseOp > .05){
+      const v = Math.min(baseOp, GIZMO_DIM_PLANES);
+      m.opacity = v; m._opacity = v;
+    }
+  });
+  if("size" in transformControls) transformControls.size = 0.9;
+  // Aktif eksen vurgusu TC içinde sabit SARI (0xffff00) — paletle uyum için her karede
+  // vurgulanan malzemeyi kendi eksen renginin aydınlatılmış tonuna çevir.
+  const BEYAZ = new THREE.Color(0xffffff);
+  let gizmoNode = null;
+  transformGizmoObj.traverse(o=>{ if(!gizmoNode && o.type === "TransformControlsGizmo") gizmoNode = o; });
+  if(gizmoNode){
+    const orig = gizmoNode.updateMatrixWorld.bind(gizmoNode);
+    gizmoNode.updateMatrixWorld = function(force){
+      orig(force);
+      this.traverse(o=>{
+        const m = o.material;
+        if(m && m.color && m._color && m.color.getHex() === 0xffff00){
+          m.color.copy(m._color).lerp(BEYAZ, 0.45);
+        }
+      });
+    };
+  }
+})();
 
 // PBR ortam (stüdyo yansımaları) — başarısız olursa sessizce atla. `pmrem` ve
 // `roomEnvTexture` HDRI sistemi tarafından da (aşağıda) yeniden kullanılır: bir HDRI
@@ -1658,7 +1728,7 @@ function addItem(name, object3D, isSample){
     group.position.x += items.length * 1.6;
   }
 
-  const item = { id, name, group, baseScale, isSample: !!isSample, userScale: 1, mirror: {x:1,y:1,z:1}, visible: true, locked: false, groupTag: null };
+  const item = { id, name, group, baseScale, isSample: !!isSample, userScale: 1, scaleAxis: {x:1,y:1,z:1}, mirror: {x:1,y:1,z:1}, visible: true, locked: false, groupTag: null };
   items.push(item);
   setActive(id);
   renderItemList();
@@ -1823,7 +1893,7 @@ function duplicateItem(id){
       o.material = Array.isArray(o.material) ? cloned : cloned[0];
     }
   });
-  const item = { id:newId, name:(src.isSample?"Atlas Lounge Chair":src.name)+" (kopya)", group, baseScale:src.baseScale, isSample:false, userScale:src.userScale, mirror:{...src.mirror}, visible:true, locked:false, groupTag:src.groupTag };
+  const item = { id:newId, name:(src.isSample?"Atlas Lounge Chair":src.name)+" (kopya)", group, baseScale:src.baseScale, isSample:false, userScale:src.userScale, scaleAxis:{...(src.scaleAxis||{x:1,y:1,z:1})}, mirror:{...src.mirror}, visible:true, locked:false, groupTag:src.groupTag };
   items.push(item);
   setActive(newId);
   renderItemList();
@@ -1904,16 +1974,38 @@ function syncTransformFieldsFromActive(){
   $("#objRotX").value = THREE.MathUtils.radToDeg(item.group.rotation.x).toFixed(1);
   $("#objRotY").value = THREE.MathUtils.radToDeg(item.group.rotation.y).toFixed(1);
   $("#objRotZ").value = THREE.MathUtils.radToDeg(item.group.rotation.z).toFixed(1);
+  syncScaleFields(item);
   syncMirrorButtonsFromActive();
+}
+/* Scale X/Y/Z alanlarını grubun gerçek ölçeğinden doldur — kullanıcının o an
+   YAZDIĞI alan atlanır (yazarken altından değer değiştirmemek için). */
+function syncScaleFields(item){
+  const t = getAxisTotals(item);
+  [["objSclX", t.x], ["objSclY", t.y], ["objSclZ", t.z]].forEach(([id, v])=>{
+    const el = $("#"+id);
+    if(document.activeElement !== el) el.value = v.toFixed(2);
+  });
 }
 
 /* ---- Aynala (Mirror) — seçili eksende ölçek işaretini ters çevirir, geometriyi ayna görüntüsü yapar ---- */
+/* Ölçek modeli: eksen ölçeği = baseScale × userScale (uniform) × scaleAxis[eksen] (oran) × mirror.
+   scaleAxis, uniform kilit KAPALIYKEN eksenler arası oranı taşır; kilit açıkken {1,1,1}dir. */
+function itemScaleAxis(item){ return item.scaleAxis || (item.scaleAxis = { x:1, y:1, z:1 }); }
 function applyItemScale(item){
+  const sa = itemScaleAxis(item);
   item.group.scale.set(
-    item.baseScale * item.userScale * item.mirror.x,
-    item.baseScale * item.userScale * item.mirror.y,
-    item.baseScale * item.userScale * item.mirror.z
+    item.baseScale * item.userScale * sa.x * item.mirror.x,
+    item.baseScale * item.userScale * sa.y * item.mirror.y,
+    item.baseScale * item.userScale * sa.z * item.mirror.z
   );
+}
+/* Grubun mevcut ölçeğinden eksen başına "kullanıcı ölçeği"ni türet (mirror/baseScale arındırılmış) */
+function getAxisTotals(item){
+  return {
+    x: item.group.scale.x / (item.baseScale * item.mirror.x),
+    y: item.group.scale.y / (item.baseScale * item.mirror.y),
+    z: item.group.scale.z / (item.baseScale * item.mirror.z),
+  };
 }
 function toggleMirror(axis){
   const item = items.find(i=>i.id===activeId);
@@ -1977,7 +2069,7 @@ function doRedo(){
 function snapTransform(item){
   return {
     pos: item.group.position.clone(), quat: item.group.quaternion.clone(), scale: item.group.scale.clone(),
-    userScale: item.userScale, mirror: { ...item.mirror },
+    userScale: item.userScale, scaleAxis: { ...itemScaleAxis(item) }, mirror: { ...item.mirror },
   };
 }
 function applyTransformSnap(item, s){
@@ -1985,6 +2077,7 @@ function applyTransformSnap(item, s){
   item.group.quaternion.copy(s.quat);
   item.group.scale.copy(s.scale);
   item.userScale = s.userScale;
+  item.scaleAxis = { ...(s.scaleAxis || {x:1,y:1,z:1}) };
   item.mirror = { ...s.mirror };
   if(item.id === activeId){
     syncTransformFieldsFromActive();
@@ -2015,17 +2108,45 @@ function makeItemCmd(item, label, isAdd){
   return isAdd ? { label, undo: removeIt, redo: addIt } : { label, undo: addIt, redo: removeIt };
 }
 
-/* Gizmo sürüklemesi: sürükleme başında anlık görüntü, bitişinde komut */
+/* Gizmo sürüklemesi: sürükleme başında anlık görüntü, bitişinde komut.
+   Ölçek sürüklemesi bitince userScale/scaleAxis grubun gerçek ölçeğinden yeniden
+   türetilir — böylece kaydırıcı ve Scale X/Y/Z alanları gizmodan sonra da doğru kalır. */
 let gizmoDragSnap = null;
 transformControls.addEventListener("dragging-changed", e=>{
   const item = items.find(i=>i.id===activeId);
   if(!item) return;
   if(e.value){ gizmoDragSnap = snapTransform(item); }
   else if(gizmoDragSnap){
+    if(gizmoMode === "scale"){
+      const t = getAxisTotals(item);
+      const uni = Math.cbrt(Math.abs(t.x * t.y * t.z)) || 1;
+      item.userScale = uni;
+      item.scaleAxis = { x: t.x/uni, y: t.y/uni, z: t.z/uni };
+      $("#scaleRange").value = Math.round(Math.min(300, Math.max(20, uni*100)));
+      $("#scaleVal").textContent = uni.toFixed(2) + "×";
+    }
     pushTransformUndo(item.id, gizmoDragSnap, snapTransform(item),
       gizmoMode === "rotate" ? "Döndürme" : gizmoMode === "scale" ? "Ölçekleme" : "Taşıma");
     gizmoDragSnap = null;
   }
+});
+
+/* Shift ile hassas ölçekleme: TransformControls her pointer hareketinde ölçeği sürükleme
+   başlangıcından (kendi iç _scaleStart'ından) hesaplar — biz uygulanan DELTAYI merkezi
+   precisionMultiplier ile söndürürüz. Uniform (merkez tutamacı) ve eksen bazlı tutamaçların
+   hepsinde çalışır; Shift bırakılınca sönümleme kendiliğinden biter. */
+transformControls.addEventListener("objectChange", ()=>{
+  if(gizmoMode !== "scale" || !ViewportInput.shift || !gizmoDragSnap) return;
+  const item = items.find(i=>i.id===activeId);
+  if(!item) return;
+  const s0 = gizmoDragSnap.scale, s = item.group.scale;
+  const p = TRANSFORM_SENSITIVITY.precisionMultiplier * TRANSFORM_SENSITIVITY.scale;
+  s.set(
+    s0.x * (1 + (s.x / s0.x - 1) * p),
+    s0.y * (1 + (s.y / s0.y - 1) * p),
+    s0.z * (1 + (s.z / s0.z - 1) * p)
+  );
+  syncScaleFields(item);
 });
 
 /* Sayısal alanlar + ölçek kaydırıcısı: odak/basışta anlık görüntü, değişiklik bitince komut */
@@ -2044,22 +2165,78 @@ function wireTransformUndo(el, label){
 ["objRotX","objRotY","objRotZ"].forEach(id=> wireTransformUndo($("#"+id), "Rotasyon düzenleme"));
 wireTransformUndo($("#scaleRange"), "Ölçekleme");
 
-// W/E/R kısayolları — yazı alanlarında (input/textarea/select) tetiklenmesin diye korunuyor.
+/* ================= Merkezi Viewport Girdi Yöneticisi (ViewportInput) =================
+   Klavye/fare durumunun TEK sahibi: Shift hassasiyet modu, Alt navigasyon modu,
+   W/E/R araç kısayolları (3ds Max düzeni), F/Z odaklan, Ctrl+Z/Y geri al-yinele.
+   Kısayollar yazı alanı odaktayken ve modal açıkken devre dışıdır. Hassasiyet ve
+   adım değerleri merkezi sabitlerden gelir — bileşenlere dağıtılmaz. */
+const TRANSFORM_SENSITIVITY = { move: 1, rotate: 1, scale: 1, precisionMultiplier: 0.1 };
+const NUMERIC_STEPS = {
+  pos:   { normal: 0.10, precise: 0.01 },
+  rot:   { normal: 1.0,  precise: 0.1  },
+  scale: { normal: 0.10, precise: 0.01 },
+};
+var ViewportInput = {
+  shift: false,
+  alt: false,
+  isTyping(){ const t = document.activeElement?.tagName; return t === "INPUT" || t === "TEXTAREA" || t === "SELECT"; },
+  blocked(){ return this.isTyping() || $("#csModal").style.display !== "none"; },
+  // Alt durumuna göre navigasyonu uygula: orta tuş Pan ↔ Orbit, tekerlek normal ↔ yavaş zoom.
+  // OrbitControls kamera tipi değişince yeniden yaratılır — makeOrbitControls bunu tekrar çağırır.
+  applyToControls(c){
+    if(!c) return;
+    c.mouseButtons.MIDDLE = this.alt ? THREE.MOUSE.ROTATE : THREE.MOUSE.PAN;
+    c.zoomSpeed = this.alt ? 0.3 : 1;
+  },
+  refresh(){
+    this.applyToControls(controls);
+    // Gösterge yalnızca Shift basılı + aktif araç Ölçekleme iken
+    $("#hudPrecision").style.display = (this.shift && gizmoMode === "scale") ? "" : "none";
+  },
+  step(kind){ return this.shift ? NUMERIC_STEPS[kind].precise : NUMERIC_STEPS[kind].normal; },
+};
 document.addEventListener("keydown", e=>{
-  const tag = document.activeElement?.tagName;
-  if(tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  if(e.key === "Shift" && !ViewportInput.shift){ ViewportInput.shift = true; ViewportInput.refresh(); }
+  if(e.key === "Alt"){ ViewportInput.alt = true; ViewportInput.refresh(); e.preventDefault(); } // tarayıcı menü odağını çalmasın
+  if(ViewportInput.blocked()) return;
   if((e.ctrlKey || e.metaKey) && !e.altKey){
     const k = e.key.toLowerCase();
     if(k === "z"){ e.preventDefault(); if(e.shiftKey) doRedo(); else doUndo(); }
     else if(k === "y"){ e.preventDefault(); doRedo(); }
     return;
   }
-  if(e.altKey) return;
-  if(e.key === "w" || e.key === "W") setGizmoMode("translate");
-  else if(e.key === "e" || e.key === "E") setGizmoMode("rotate");
-  else if(e.key === "r" || e.key === "R") setGizmoMode("scale");
-  else if(e.key === "Escape") detachGizmo();
+  if(e.altKey && e.key !== "Alt") return;
+  const k = e.key.toLowerCase();
+  if(k === "w") setGizmoMode("translate");
+  else if(k === "e") setGizmoMode("rotate");
+  else if(k === "r"){ setGizmoMode("scale"); ViewportInput.refresh(); }
+  else if(k === "f" || k === "z") frameActive();       // 3ds Max: seçiliye odaklan / çerçevele
+  else if(e.key === "Escape"){ detachGizmo(); ViewportInput.refresh(); }
 });
+document.addEventListener("keyup", e=>{
+  if(e.key === "Shift"){ ViewportInput.shift = false; ViewportInput.refresh(); }
+  if(e.key === "Alt"){ ViewportInput.alt = false; ViewportInput.refresh(); }
+});
+// Pencere odak kaybında (Alt+Tab vb.) basılı-tuş durumları sıfırlanır
+window.addEventListener("blur", ()=>{ ViewportInput.shift = false; ViewportInput.alt = false; ViewportInput.refresh(); });
+ViewportInput.refresh();
+
+/* Sayısal alanlarda ok tuşlarıyla artır/azalt — Shift basılıyken ince adım.
+   Adımlar NUMERIC_STEPS'ten gelir; alan kendi 'input' olayını tetikler, mevcut
+   uygulama mantığı (ve undo yakalama) değişmeden çalışır. */
+function wireStepField(el, kind, decimals){
+  el.addEventListener("keydown", e=>{
+    if(e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    const st = ViewportInput.step(kind);
+    const dir = e.key === "ArrowUp" ? 1 : -1;
+    el.value = (parseFloat(el.value || "0") + dir * st).toFixed(decimals);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+}
+["objPosX","objPosY","objPosZ"].forEach(id=> wireStepField($("#"+id), "pos", 2));
+["objRotX","objRotY","objRotZ"].forEach(id=> wireStepField($("#"+id), "rot", 1));
+["objSclX","objSclY","objSclZ"].forEach(id=> wireStepField($("#"+id), "scale", 2));
 
 ["objPosX","objPosY","objPosZ"].forEach(id=>{
   $("#"+id).addEventListener("input", ()=>{
@@ -2075,6 +2252,31 @@ document.addEventListener("keydown", e=>{
       THREE.MathUtils.degToRad(+$("#objRotY").value||0),
       THREE.MathUtils.degToRad(+$("#objRotZ").value||0)
     );
+  });
+});
+
+/* Scale X/Y/Z alanları — uniform kilit AÇIKKEN bir ekseni değiştirmek üçünü aynı orana
+   getirir (userScale güncellenir, oranlar sıfırlanır); KAPALIYKEN yalnız o eksenin
+   scaleAxis oranı değişir. Kaynak model: bkz. applyItemScale. */
+["objSclX","objSclY","objSclZ"].forEach((id, i)=>{
+  const axis = "xyz"[i];
+  wireTransformUndo($("#"+id), "Ölçek düzenleme");
+  $("#"+id).addEventListener("input", ()=>{
+    const item = items.find(x=>x.id===activeId);
+    if(!item || item.locked) return;
+    const v = parseFloat($("#"+id).value);
+    if(!isFinite(v) || v <= 0) return;
+    if($("#sclUniformLock").checked){
+      item.userScale = v;
+      item.scaleAxis = { x:1, y:1, z:1 };
+      $("#scaleRange").value = Math.round(Math.min(300, Math.max(20, v*100)));
+      $("#scaleVal").textContent = v.toFixed(2) + "×";
+    }else{
+      itemScaleAxis(item)[axis] = v / (item.userScale || 1);
+    }
+    applyItemScale(item);
+    if(typeof refreshShadowForActive === "function") refreshShadowForActive();
+    syncScaleFields(item); // kilitliyken diğer iki alan da güncellensin (odaktaki alan atlanır)
   });
 });
 
@@ -2873,6 +3075,7 @@ $("#scaleRange").addEventListener("input", e=>{
   item.userScale = (+e.target.value)/100;
   applyItemScale(item);
   $("#scaleVal").textContent = item.userScale.toFixed(2)+"×";
+  syncScaleFields(item);
   refreshShadowForActive();
 });
 $("#btnFloor").addEventListener("click", ()=>{
