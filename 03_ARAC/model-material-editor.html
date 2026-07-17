@@ -2452,24 +2452,41 @@ $("#sceneSeg").querySelectorAll("button").forEach(btn=>btn.addEventListener("cli
   ["products","transform"].forEach(t=> $("#tab-"+t).classList.toggle("on", t===btn.dataset.tab));
 }));
 
-/* ---------------- Kayar paneller (varsayılan gizli, kenar tırnağıyla aç/kapa) ---------------- */
-$("#toggleScene").addEventListener("click", ()=> $("#scenePanel").classList.toggle("open"));
-$("#toggleConfig").addEventListener("click", ()=> $("#configPanel").classList.toggle("open"));
-
-// Mouse imleci ekrana yaklaşınca (veya panelin kendisinin üzerindeyken) panel otomatik açılır,
-// imleç her ikisinden de ayrılınca kısa bir gecikmeyle kapanır — kenar tırnağına tıklamak hâlâ
-// çalışır ama artık zorunlu değil.
-function setupHoverPanel(panel, zone){
+/* ---------------- Kayar paneller (varsayılan gizli, kenar tırnağıyla aç/kapa) ----------------
+   Hover-açılma ile tıklama-toggle'ı birbirine karşı ÇALIŞMAMALI: kulakçığa gelen imleç paneli
+   hover ile açar, hemen ardından gelen tıklama toggle olsaydı paneli geri kapatırdı (dokunmatikte
+   tap = mouseenter+click zinciri olduğundan panel hiç açılamazdı). Kurallar:
+   - Tıklama, hover'ın az önce (<700ms) açtığı paneli KAPATMAZ — "açma onayı" sayılır.
+   - Kullanıcı tıklamayla bilinçli kapattıysa, imleç bölgeden/panelden ayrılana dek hover
+     paneli yeniden açmaz (yoksa panel imlecin altından kayıp anında geri gelirdi). */
+function setupSlidePanel(panel, zone, toggleBtn){
   let closeTimer = null;
-  const open = () => { clearTimeout(closeTimer); panel.classList.add("open"); };
+  let hoverOpenedAt = 0;
+  let suppressHover = false;
+  const open = () => {
+    clearTimeout(closeTimer);
+    if(suppressHover) return;
+    if(!panel.classList.contains("open")){ panel.classList.add("open"); hoverOpenedAt = performance.now(); }
+  };
   const scheduleClose = () => { clearTimeout(closeTimer); closeTimer = setTimeout(() => panel.classList.remove("open"), 250); };
+  const leave = () => { suppressHover = false; scheduleClose(); };
   zone.addEventListener("mouseenter", open);
-  zone.addEventListener("mouseleave", scheduleClose);
+  zone.addEventListener("mouseleave", leave);
   panel.addEventListener("mouseenter", open);
-  panel.addEventListener("mouseleave", scheduleClose);
+  panel.addEventListener("mouseleave", leave);
+  toggleBtn.addEventListener("click", ()=>{
+    if(panel.classList.contains("open")){
+      if(performance.now() - hoverOpenedAt < 700) return; // hover az önce açtı — tıklama kapatma değil
+      panel.classList.remove("open");
+      suppressHover = true; // imleç ayrılana kadar hover yeniden açmasın
+    }else{
+      suppressHover = false;
+      panel.classList.add("open");
+    }
+  });
 }
-setupHoverPanel($("#scenePanel"), $("#hoverZoneLeft"));
-setupHoverPanel($("#configPanel"), $("#hoverZoneRight"));
+setupSlidePanel($("#scenePanel"), $("#hoverZoneLeft"), $("#toggleScene"));
+setupSlidePanel($("#configPanel"), $("#hoverZoneRight"), $("#toggleConfig"));
 
 /* ---------------- Viewport araçları ---------------- */
 let gridOn = false;
