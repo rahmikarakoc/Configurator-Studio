@@ -54,7 +54,11 @@
 
   .app{display:grid;grid-template-rows:60px 1fr;height:100vh}
 
-  .topbar{display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);background:var(--panel);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);z-index:20;box-shadow:var(--shadow-float)}
+  /* Üst çubuk: panellerle aynı cam dili + vurgu morundan zemine akan çok hafif bir gradyan */
+  .topbar{display:flex;align-items:center;gap:14px;padding:0 18px;border-bottom:1px solid var(--line);
+    background:linear-gradient(135deg, color-mix(in srgb, var(--accent2) 14%, transparent), color-mix(in srgb, var(--accent) 5%, transparent) 42%, transparent 75%), var(--panel);
+    backdrop-filter:var(--blur) saturate(1.25);-webkit-backdrop-filter:var(--blur) saturate(1.25);
+    z-index:20;box-shadow:var(--shadow-float)}
   .brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:13.5px;letter-spacing:.2px}
   .brand .mark{width:26px;height:26px;flex:0 0 auto;display:block;filter:drop-shadow(0 3px 6px rgba(30,15,80,.28))}
   .brand .mark svg{width:100%;height:100%;display:block}
@@ -206,6 +210,7 @@
   .field{margin-top:10px}
   .field label{display:flex;justify-content:space-between;font-size:10.5px;color:var(--dim);margin-bottom:5px}
   .field label b{color:var(--ink);font-family:var(--font-mono);font-weight:600}
+  .range-ends{display:flex;justify-content:space-between;font-size:9.5px;color:var(--dim);margin-top:3px;letter-spacing:.02em}
   /* Sağ paneldeki TÜM select'ler tek stil — native beyaz görünüm tema ile uyuşmuyor
      (.size-grid/.adj-row select kuralının genellenmiş hali; Render & Export ve Kamera
      sekmelerindeki select'ler de böylece diğer form öğeleriyle aynı dili konuşur). */
@@ -507,7 +512,7 @@
         <button class="icon-btn" id="gizmoMove" title="Taşıma Aracı (W)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M2 12h20"/><path d="m5 9-3 3 3 3M19 9l3 3-3 3M9 5l3-3 3 3M9 19l3 3 3-3"/></svg></button>
         <button class="icon-btn" id="gizmoRotate" title="Döndürme Aracı (E)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4V1L7.5 5 12 9V6a6 6 0 1 1-6 6"/></svg></button>
         <button class="icon-btn" id="gizmoScale" title="Ölçekleme Aracı (R)&#10;Shift: hassas ölçeklendirme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg></button>
-        <button class="icon-btn" id="gridToggle" title="Izgara"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></button>
+        <button class="icon-btn" id="gridToggle" title="Izgara (G)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg></button>
         <button class="icon-btn" id="wireToggle" title="Tel kafes (wireframe)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m12 2 9 5v10l-9 5-9-5V7z"/><path d="M12 2v20M3 7l9 5 9-5M3 17l9-5 9 5"/></svg></button>
         <button class="icon-btn" id="uvToggle" title="UV Grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 8h18M3 13h18M8 3v18M13 3v18"/></svg></button>
         <button class="icon-btn" id="compareToggle" title="Öncesi/Sonrası karşılaştır"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><path d="M7 7H4a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3"/><path d="M17 7h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-3"/></svg></button>
@@ -535,9 +540,9 @@
         <button class="icon-btn" id="zoomOut" title="Uzaklaştır"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M8 11h6M21 21l-4.3-4.3"/></svg></button>
       </div>
 
+      <!-- Bilgi çipleri (Aydınlatma / Mesh sayısı) kullanıcı isteğiyle kaldırıldı —
+           yalnızca geçici hassasiyet göstergesi kaldı (Shift + Ölçekleme sırasında). -->
       <div class="vp-hud">
-        <div class="hud-chip" id="hudLight">Aydınlatma: Stüdyo</div>
-        <div class="hud-chip" id="hudMesh">Mesh: 1 · Malzeme: 1</div>
         <div class="hud-chip hud-precision" id="hudPrecision" style="display:none">◆ Hassas Ölçek</div>
       </div>
     </div>
@@ -603,8 +608,9 @@
             <div class="temp-swatch"></div>
           </div>
           <div class="field">
-            <label>Gölge Keskinliği <b id="shadowVal">Orta</b></label>
+            <label>Gölge Yumuşaklığı <b id="shadowVal">Orta</b></label>
             <input type="range" id="shadowSharp" min="0" max="100" value="55">
+            <div class="range-ends"><span>◼ Keskin</span><span>Yumuşak ◻</span></div>
           </div>
           <div class="field">
             <label>Pozlama (Exposure) <b id="exposVal">1.00</b></label>
@@ -1123,12 +1129,13 @@ keyLight.shadow.mapSize.set(2048,2048);
 // konumlandığı için (bkz. setSunDirection) dar ve sabit bir near/far yeterli ve çok daha hassas.
 keyLight.shadow.camera.near = 0.5;
 keyLight.shadow.camera.far = 12;
-keyLight.shadow.radius = 8;          // gölge keskinliği/yumuşaklığı (VSMShadowMap ile)
-keyLight.shadow.blurSamples = 16;
+keyLight.shadow.radius = Math.pow(0.55, 1.35) * 55; // kaydırıcı varsayılanı (55) ile aynı eşleme — bkz. shadowSharp handler'ı
+keyLight.shadow.blurSamples = 24;    // geniş radius'ta bantlanmasın diye örnek sayısı artırıldı
 keyLight.shadow.bias = -0.00045;
 keyLight.shadow.normalBias = 0.02;   // VSM ile birlikte peter-panning/acne'i bias'tan daha güvenilir azaltır
 const fillLight = new THREE.HemisphereLight(0xffffff, 0x3a3a3a, 0.65);
 scene.add(keyLight, keyLight.target, fillLight);
+var masterLightScale = 1; // "Işık Şiddeti" kaydırıcısının ortam ışığına da uygulanan ana çarpanı
 
 // Gölge kamerasının sol/sağ/üst/alt sınırlarını değiştirmek TEK BAŞINA hiçbir şey yapmaz —
 // OrthographicCamera bu değerleri yalnızca updateProjectionMatrix() çağrıldığında gerçek
@@ -2211,6 +2218,7 @@ document.addEventListener("keydown", e=>{
   else if(k === "e") setGizmoMode("rotate");
   else if(k === "r"){ setGizmoMode("scale"); ViewportInput.refresh(); }
   else if(k === "f" || k === "z") frameActive();       // 3ds Max: seçiliye odaklan / çerçevele
+  else if(k === "g") toggleGrid();                      // ızgara aç/kapa
   else if(e.key === "Escape"){ detachGizmo(); ViewportInput.refresh(); }
 });
 document.addEventListener("keyup", e=>{
@@ -2281,11 +2289,8 @@ function wireStepField(el, kind, decimals){
 });
 
 function updateHud(){
-  const item = items.find(i=>i.id===activeId);
-  if(!item){ $("#hudMesh").textContent = "Mesh: 0 · Malzeme: 0"; return; }
-  let meshCount=0; const mats = new Set();
-  item.group.traverse(o=>{ if(o.isMesh){ meshCount++; (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m&&mats.add(m.uuid)); } });
-  $("#hudMesh").textContent = `Mesh: ${meshCount} · Malzeme: ${mats.size}`;
+  // Sol alttaki bilgi çipleri (Aydınlatma / Mesh) kullanıcı isteğiyle kaldırıldı — çağrı
+  // noktaları korunuyor, gelecekte bir durum çubuğu eklenirse burası tek nokta.
 }
 
 /* ---------------- içe aktarma ---------------- */
@@ -2858,8 +2863,10 @@ function setHdriRotation(deg){
   if(scene.backgroundRotation) scene.backgroundRotation.y = rad;
 }
 function applyEnvIntensity(){
-  if("environmentIntensity" in scene) scene.environmentIntensity = hdriIntensity;
-  items.forEach(it=> collectMaterials(it.group).forEach(m=> m.envMapIntensity = hdriIntensity));
+  // Etkin ortam yoğunluğu = HDRI Yoğunluğu kaydırıcısı × ana Işık Şiddeti (bkz. applyLighting)
+  const eff = hdriIntensity * (typeof masterLightScale === "number" ? masterLightScale : 1);
+  if("environmentIntensity" in scene) scene.environmentIntensity = eff;
+  items.forEach(it=> collectMaterials(it.group).forEach(m=> m.envMapIntensity = eff));
 }
 function cacheHdri(id, result){
   hdriCache.set(id, result);
@@ -3020,19 +3027,26 @@ function applyLighting(){
   $("#stage-bg").style.background = `radial-gradient(120% 90% at 50% -10%, ${L.bg[0]}, ${L.bg[1]} 78%)`;
   keyLight.color.copy(kelvinToRGB(curKelvin)); keyLight.intensity = L.keyI * intensity;
   fillLight.color.set(0xffffff); fillLight.groundColor.set(L.fill); fillLight.intensity = L.fillI * intensity;
+  // KÖK NEDEN DÜZELTMESİ: sahneyi esas aydınlatan ortam haritasıydı (RoomEnvironment/HDRI) —
+  // "Işık Şiddeti" yalnızca yönlü/dolgu ışıkları değiştirdiği için görsel etkisi yok denecek
+  // kadar azdı (renk sıcaklığının tonu da ortam ışığında yıkanıyordu). Şiddet artık ortam
+  // yoğunluğunu da ölçekliyor: kaydırıcı gerçekten sahnenin parlaklığını yönetiyor.
+  masterLightScale = intensity;
+  applyEnvIntensity();
   setSunDirection(sunAz, sunEl);
-  $("#hudLight").textContent = "Aydınlatma: " + L.name;
 }
 $("#intensity").addEventListener("input", e=>{ $("#intensVal").textContent = e.target.value+"%"; applyLighting(); });
 $("#temperature").addEventListener("input", e=>{ curKelvin = +e.target.value; $("#tempVal").textContent = curKelvin+"K"; applyLighting(); });
 $("#shadowSharp").addEventListener("input", e=>{
   const v = +e.target.value;
-  // Frustum artık dar ve dinamik (fitShadowFrustum) olduğu için eski 0.15–26 aralığı aşırı
-  // bulanıklaştırıyordu (yüksek radius + dar frustum = gölgenin tamamen erimesi). 0.1–9 bu
-  // frustum ölçeğiyle "keskin" ↔ "çok yumuşak" arasında gerçekçi bir aralık veriyor.
-  const radius = THREE.MathUtils.lerp(0.1, 9, v/100); // 0=keskin(küçük ışık kaynağı), 100=çok yumuşak(geniş alan ışığı)
+  /* KÖK NEDEN DÜZELTMESİ: eski 0.1–9 aralığı, daraltılmış gölge frustum'unda (≈±1.2 birim
+     @2048px) yalnızca birkaç texel'lik bulanıklık üretiyordu — kaydırıcının iki ucu arasındaki
+     fark gözle görülmüyordu (piksel karşılaştırmasıyla kanıtlandı). Radius texel cinsindendir;
+     algısal bir eğriyle 0–55 texel aralığına eşleniyor: sol uç bıçak gibi keskin, sağ uç
+     belirgin biçimde dağılmış yumuşak gölge. */
+  const radius = Math.pow(v/100, 1.35) * 55;
   keyLight.shadow.radius = radius;
-  const label = v<20 ? "Çok Keskin" : v<45 ? "Keskin" : v<70 ? "Orta" : v<88 ? "Yumuşak" : "Çok Yumuşak";
+  const label = v<15 ? "Çok Keskin" : v<40 ? "Keskin" : v<65 ? "Orta" : v<85 ? "Yumuşak" : "Çok Yumuşak";
   $("#shadowVal").textContent = label;
 });
 
@@ -3160,7 +3174,12 @@ setupSlidePanel($("#configPanel"), $("#hoverZoneRight"), $("#toggleConfig"));
 
 /* ---------------- Viewport araçları ---------------- */
 let gridOn = false;
-$("#gridToggle").addEventListener("click", (e)=>{ gridOn=!gridOn; grid.visible=gridOn; e.currentTarget.classList.toggle("on", gridOn); });
+function toggleGrid(){
+  gridOn = !gridOn;
+  grid.visible = gridOn;
+  $("#gridToggle").classList.toggle("on", gridOn);
+}
+$("#gridToggle").addEventListener("click", toggleGrid);
 $("#resetView").addEventListener("click", frameActive);
 // Ortografik kamerada "mesafe" görsel ölçeği etkilemez — zoom .zoom özelliğiyle yapılır
 // (OrbitControls'un fare tekerleği davranışıyla da tutarlı).
